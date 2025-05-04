@@ -1,30 +1,28 @@
 package main
 
 import (
-	"bufio"
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sylmark/rpc"
+	"sylmark/lsp"
+
+	"github.com/sourcegraph/jsonrpc2"
 )
 
 func main() {
 	logFile := setLogger()
 	defer logFile.Close()
-	slog.Info("Hey, We're up!")
+	slog.Info("Hey, We're up!--------------------------------------------------")
 
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Split(rpc.Split)
+	ctx := context.Background()
+	stream := jsonrpc2.NewBufferedStream(stdwrc{}, jsonrpc2.VSCodeObjectCodec{})
 
-	for scanner.Scan() {
-		msg := scanner.Text()
-		handleMessage(msg)
-	}
-}
+	handler := lsp.NewHandler()
+	<- jsonrpc2.NewConn(ctx, stream, handler).DisconnectNotify()
 
-func handleMessage(msg any) {
-	slog.Info(msg.(string))
+	slog.Info("Closing the lsp.")
 }
 
 func setLogger() *os.File {
@@ -37,4 +35,21 @@ func setLogger() *os.File {
 	slog.SetDefault(logger)
 	fmt.Println("Logging successfully configured")
 	return logFile
+}
+
+type stdwrc struct{}
+
+func (stdwrc) Read(p []byte) (int, error) {
+	return os.Stdin.Read(p)
+}
+
+func (stdwrc) Write(p []byte) (int, error) {
+	return os.Stdout.Write(p)
+}
+
+func (stdwrc) Close() error {
+	if err := os.Stdin.Close(); err != nil {
+		return err
+	}
+	return os.Stdout.Close()
 }
