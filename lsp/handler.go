@@ -5,16 +5,19 @@ import (
 	"log/slog"
 
 	"github.com/sourcegraph/jsonrpc2"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type Config struct {
 	RootMarkers *[]string `yaml:"root-markers" json:"rootMarkers"`
 }
 
-type langHandler struct {
+type LangHandler struct {
+	MarkdownParser *tree_sitter.Parser
+	InlineMarkdownParser *tree_sitter.Parser
 }
 
-func (h *langHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
+func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
 	slog.Info("Received request with Handle method=> " + req.Method)
 	switch req.Method {
 	case "initialize":
@@ -29,9 +32,8 @@ func (h *langHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 	return nil, nil
 }
 
-func NewHandler() jsonrpc2.Handler {
-	handler := langHandler{}
-	return jsonrpc2.HandlerWithError(handler.Handle)
+func NewHandler() (hanlder *LangHandler) {
+	return &LangHandler{}
 }
 
 func fromURI(uri DocumentURI) (path string, er error) {

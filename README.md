@@ -1,12 +1,14 @@
 # Sylmark
 
+someting text before [[README]] afte
+
+[some](README#Sylmark)
+
 ## Objective
 
-Create an lsp for markdown PKM and learn go better
+- [[coolfile]]
+- Cool [[superfile#ks]]
 
-Somehting
+Create an #syl lsp for markdown PKM and learn go better
 
-## Roadmap
-
-- [ ] Create v0.5 by self to be used by you
-- [ ] Create v1 for general use
+![[README]]

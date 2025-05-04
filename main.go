@@ -20,7 +20,11 @@ func main() {
 	stream := jsonrpc2.NewBufferedStream(stdwrc{}, jsonrpc2.VSCodeObjectCodec{})
 
 	handler := lsp.NewHandler()
-	<- jsonrpc2.NewConn(ctx, stream, handler).DisconnectNotify()
+	handler.SetupGrammars()
+	defer handler.MarkdownParser.Close()
+	defer handler.InlineMarkdownParser.Close()
+	jsonHandler := jsonrpc2.HandlerWithError(handler.Handle)
+	<- jsonrpc2.NewConn(ctx, stream, jsonHandler).DisconnectNotify()
 
 	slog.Info("Closing the lsp.")
 }
