@@ -21,8 +21,7 @@ func main() {
 
 	handler := lsp.NewHandler()
 	handler.SetupGrammars()
-	defer handler.MarkdownParser.Close()
-	defer handler.InlineMarkdownParser.Close()
+	defer handler.Parser.Close()
 	jsonHandler := jsonrpc2.HandlerWithError(handler.Handle)
 	<- jsonrpc2.NewConn(ctx, stream, jsonHandler).DisconnectNotify()
 

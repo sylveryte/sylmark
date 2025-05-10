@@ -13,8 +13,7 @@ type Config struct {
 }
 
 type LangHandler struct {
-	MarkdownParser *tree_sitter.Parser
-	InlineMarkdownParser *tree_sitter.Parser
+	Parser *tree_sitter.Parser
 }
 
 func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
