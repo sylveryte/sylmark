@@ -20,14 +20,9 @@ func (h *LangHandler) handleTextDocumentDidOpen(_ context.Context, _ *jsonrpc2.C
 	}
 	content := params.TextDocument.Text
 
-	slog.Info("Got uri " + string(params.TextDocument.URI))
-	slog.Info("Got text " + string(params.TextDocument.Text))
+	slog.Info("Opened got uri " + string(params.TextDocument.URI))
 
-
-	// doc := parseGoldmark(content)
-	// slog.Info(fmt.Sprintf("Doc Type %d, Kind %s", doc.Type(), doc.Kind()))
-
-	h.parseTreesitter(content)
+	h.openedDocs.AddDoc(params.TextDocument.URI, Document(content))
 
 	return nil, nil
 

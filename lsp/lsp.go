@@ -132,3 +132,9 @@ type Position struct {
 	Line      int `json:"line"`
 	Character int `json:"character"`
 }
+
+// Hover is
+type Hover struct {
+	Contents any    `json:"contents"`
+	Range    *Range `json:"range"`
+}

@@ -18,23 +18,24 @@ func (h *LangHandler) handleInitialize(_ context.Context, conn *jsonrpc2.Conn, r
 		return nil, err
 	}
 
-	slog.Info("InitializeParams rootUri is" + string(params.RootURI))
-
-	// The rootUri of the workspace. Is null if no folder is open.
+	// The rootUri of the workspace. Is null if no folder is open or no rootmakers added
 	if params.RootURI != "" {
-		rootPath, err := fromURI(params.RootURI)
+		rootPath, err := dirPathFromURI(params.RootURI)
 		if err != nil {
 			return nil, err
 		}
 		slog.Warn("RootPath is " + rootPath)
-		// h.rootPath = filepath.Clean(rootPath)
-		// h.addFolder(rootPath)
+		h.addRootPathAndLoad(rootPath)
 	}
 
 	return InitializeResult{
 		Capabilities: ServerCapabilities{
-			HoverProvider: true,
+			HoverProvider:    true,
 			TextDocumentSync: TDSKFull,
+			CompletionProvider: &CompletionProvider{
+				ResolveProvider:   true,
+				TriggerCharacters: []string{"#", "[["},
+			},
 		},
 	}, nil
 

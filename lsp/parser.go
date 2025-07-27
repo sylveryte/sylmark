@@ -18,16 +18,11 @@ func (h *LangHandler) SetupGrammars() {
 	slog.Info("Grammars are set")
 }
 
-func (h *LangHandler) parseTreesitter(content string) {
-
-	tree := h.Parser.Parse([]byte(content), nil)
-	rootNode := tree.RootNode()
-	slog.Info(fmt.Sprintf("n child %d ", rootNode.ChildCount()))
-	h.printTsTree(*rootNode, 0, content)
-
+func (h *LangHandler) parse(content string) *tree_sitter.Tree {
+	return h.Parser.Parse([]byte(content), nil)
 }
 
-func (h *LangHandler) printTsTree(node tree_sitter.Node, depth int, cont string) {
+func printTsTree(node tree_sitter.Node, depth int, cont string) {
 	indent := ""
 	for range depth {
 		indent += "  "
@@ -38,6 +33,48 @@ func (h *LangHandler) printTsTree(node tree_sitter.Node, depth int, cont string)
 
 	for i := range int(node.ChildCount()) {
 		child := node.Child(uint(i))
-		h.printTsTree(*child, depth+1, cont)
+		printTsTree(*child, depth+1, cont)
 	}
+}
+
+func getNodeContent(node tree_sitter.Node, content Document) string {
+	return string(content)[node.StartByte():node.EndByte()]
+}
+
+func pointFromPosition(pos Position) tree_sitter.Point {
+	targetRow := uint(pos.Line)
+	targetColumn := uint(pos.Character)
+	return tree_sitter.Point{Row: targetRow, Column: targetColumn}
+}
+
+func getRange(node *tree_sitter.Node) Range {
+	r := Range{}
+	r.Start = Position{
+		Line:      int(node.StartPosition().Row),
+		Character: int(node.StartPosition().Column),
+	}
+	r.End = Position{
+		Line:      int(node.EndPosition().Row),
+		Character: int(node.EndPosition().Column),
+	}
+
+	return r
+}
+
+func TraverseNodeWith(node *tree_sitter.Node, action func(*tree_sitter.Node)) {
+
+	for i := range int(node.ChildCount()) {
+		child := node.Child(uint(i))
+		action(child)
+		TraverseNodeWith(child, action)
+	}
+
+}
+
+func fieldText(parent *tree_sitter.Node, field string, content string) (string, bool) {
+	child := parent.ChildByFieldName(field)
+	if child == nil {
+		return "", false
+	}
+	return string(content[child.StartByte():child.EndByte()]), true
 }

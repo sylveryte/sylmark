@@ -13,7 +13,17 @@ type Config struct {
 }
 
 type LangHandler struct {
-	Parser *tree_sitter.Parser
+	Parser        *tree_sitter.Parser
+	rootPath      string
+	inactiveStore Store
+	openedDocs    DocumentStore
+}
+
+func NewHandler() (hanlder *LangHandler) {
+	return &LangHandler{
+		inactiveStore: newStore(),
+		openedDocs:    newDocumentStore(),
+	}
 }
 
 func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
@@ -27,18 +37,12 @@ func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 		return h.handleShutdown(ctx, conn, req)
 	case "textDocument/didOpen":
 		return h.handleTextDocumentDidOpen(ctx, conn, req)
+	case "textDocument/didChange":
+		return h.handleTextDocumentDidChange(ctx, conn, req)
+	case "textDocument/hover":
+		return h.handleHover(ctx, conn, req)
+	case "textDocument/completion":
+		// return h.handleHover(ctx, conn, req)
 	}
 	return nil, nil
-}
-
-func NewHandler() (hanlder *LangHandler) {
-	return &LangHandler{}
-}
-
-func fromURI(uri DocumentURI) (path string, er error) {
-
-	// TODO get root path from uri
-	slog.Warn("Need to get root from uri " + string(uri))
-
-	return
 }
