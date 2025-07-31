@@ -3,27 +3,20 @@ package lsp
 import (
 	"io/fs"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
-
-	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-type Target string
+type Target string // is like # Some heading
+type GTarget string   // is full GLink target
 type Tag string
 
-type DocumentData struct {
-	Node    *tree_sitter.Node
-	Content *string
+func (h *LangHandler) addRootPathAndLoad(dir string) {
+	h.rootPath = dir
+	h.loadAllClosedDocsData()
 }
 
-type NodeData struct {
-	URI  DocumentURI
-	Node *tree_sitter.Node
-}
-
-func (h *LangHandler) loadInactiveData() {
+func (h *LangHandler) loadAllClosedDocsData() {
 	if h.rootPath == "" {
 		slog.Error("h.rootPath is empty")
 		return
@@ -34,51 +27,59 @@ func (h *LangHandler) loadInactiveData() {
 			return filepath.SkipDir
 		}
 		if !d.IsDir() && strings.HasSuffix(path, ".md") {
-			// slog.Info(fmt.Sprintf("MDFile=%s Name=%s", path, d.Name()))
-			h.loadInactiveDataOfFile(path)
+			h.loadDocData(path)
 		}
-
 		return nil
 	})
-
 }
 
-func (h *LangHandler) loadInactiveDataOfFile(mdFilePath string) {
-	contentByte, err := os.ReadFile(mdFilePath)
-	if err != nil {
-		slog.Error("Failed to read file " + mdFilePath + err.Error())
-	}
-	content := string(contentByte)
-	tree := h.parse(content)
-	defer tree.Close()
-
-	rootNode := tree.RootNode()
-
-	uri, err := uriFromPath(mdFilePath)
+func (h *LangHandler) loadDocData(mdDocPath string) {
+	content := contentFromDocPath(mdDocPath)
+	uri, err := uriFromPath(mdDocPath)
 	if err != nil {
 		slog.Error(err.Error())
 		return
 	}
-	TraverseNodeWith(rootNode, func(n *tree_sitter.Node) {
-		switch n.Kind() {
-		case "wikilink":
-			{
-				getWikilinkLink(n, content)
-			}
-		case "heading":
-			{
-				getHeadingTitle(n, content)
-			}
-		case "tag":
-			{
-				h.inactiveStore.AddTag(n, uri, &content)
-			}
-		case "link":
-			{
-				getLinkUrl(n, content)
-			}
-		}
-	})
+	tree := h.parse(content)
+	defer tree.Close()
+	h.store.loadData(uri, content, tree.RootNode())
+}
 
-	// slog.Info(fmt.Sprintf("Root node is %d", rootNode.ChildCount()))
+func (h *LangHandler) onDocOpened(uri DocumentURI, content string) {
+	tree := h.parse(content)
+	h.openedDocs.addDoc(uri, Document(content), tree)
+	doc := Document(content)
+
+	h.openedDocs.addDoc(uri, doc, tree)
+}
+func (h *LangHandler) onDocClosed(uri DocumentURI) {
+	// remove data into openedDocs
+	_, found := h.openedDocs.removeDoc(uri)
+	if !found {
+		slog.Error("Document not in openedDocs")
+		return
+	}
+}
+
+func (h *LangHandler) onDocChanged(uri DocumentURI, changes TextDocumentContentChangeEvent) {
+
+	// update data into openedDocs
+	updatedDocData, oldDocData, ok := h.openedDocs.updateDoc(uri, changes, h)
+	if !ok {
+		slog.Info("Update doc failed.")
+		return
+	}
+
+	// update openedDocsStore
+	tempStoreOld := newStore()
+	tempStoreOld.loadData(uri, string(oldDocData.Content), oldDocData.Tree.RootNode())
+
+	tempStoreNew := newStore()
+	tempStoreNew.loadData(uri, string(updatedDocData.Content), updatedDocData.Tree.RootNode())
+
+	// syltodo TODO optimze this flow it
+	// do the deltas
+	h.store.subtractStore(&tempStoreOld)
+	h.store.mergeStore(&tempStoreNew)
+
 }

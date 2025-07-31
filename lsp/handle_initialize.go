@@ -36,6 +36,16 @@ func (h *LangHandler) handleInitialize(_ context.Context, conn *jsonrpc2.Conn, r
 				ResolveProvider:   true,
 				TriggerCharacters: []string{"#", "[["},
 			},
+			DefinitionProvider: true,
+			ReferencesProvider: true,
+			SemanticTokensProvider: SemanticTokensOptions{
+				Legend: SemanticTokensLegend{
+					TokenTypes:     []SemanticTokenType{ClassSematicTokenType},
+					TokenModifiers: []SemanticTokenModifier{},
+				},
+				Full:  true,
+				Range: false,
+			},
 		},
 	}, nil
 

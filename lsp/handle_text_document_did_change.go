@@ -22,7 +22,7 @@ func (h *LangHandler) handleTextDocumentDidChange(_ context.Context, _ *jsonrpc2
 
 	slog.Info("Changed got uri " + string(params.TextDocument.URI))
 	for _, c := range changes {
-		h.openedDocs.UpdateDoc(params.TextDocument.URI, c)
+		h.onDocChanged(params.TextDocument.URI, c)
 	}
 
 	return nil, nil

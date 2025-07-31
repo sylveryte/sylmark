@@ -13,16 +13,17 @@ type Config struct {
 }
 
 type LangHandler struct {
-	Parser        *tree_sitter.Parser
-	rootPath      string
-	inactiveStore Store
-	openedDocs    DocumentStore
+	Parser     *tree_sitter.Parser
+	rootPath   string
+	store      Store
+	openedDocs DocumentStore
 }
 
 func NewHandler() (hanlder *LangHandler) {
 	return &LangHandler{
-		inactiveStore: newStore(),
-		openedDocs:    newDocumentStore(),
+		store: newStore(),
+		// openedDocsStore: newStore(),
+		openedDocs: newDocumentStore(),
 	}
 }
 
@@ -37,12 +38,18 @@ func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 		return h.handleShutdown(ctx, conn, req)
 	case "textDocument/didOpen":
 		return h.handleTextDocumentDidOpen(ctx, conn, req)
+	case "textDocument/didClose":
+		return h.handleTextDocumentDidClose(ctx, conn, req)
 	case "textDocument/didChange":
 		return h.handleTextDocumentDidChange(ctx, conn, req)
 	case "textDocument/hover":
 		return h.handleHover(ctx, conn, req)
 	case "textDocument/completion":
-		// return h.handleHover(ctx, conn, req)
+		return h.handleTextDocumentCompletion(ctx, conn, req)
+	case "textDocument/references":
+		return h.handleTextDocumentReferences(ctx, conn, req)
+	case "textDocument/semanticTokens/full":
+		return h.handleTextDocumentSemanticTokensFull(ctx, conn, req)
 	}
 	return nil, nil
 }

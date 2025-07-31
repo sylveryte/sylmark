@@ -21,18 +21,11 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 	}
 
 	slog.Info("Handling hover uri is = " + string(params.TextDocument.URI))
-	slog.Info("Handling hover uri is k =" + fmt.Sprintf("line=%d pos=%d", params.Position.Line, params.Position.Character))
 
-	doc, ok := h.openedDocs.GetDoc(params.TextDocument.URI)
+	doc, node, ok := h.DocAndNodeFromURIAndPosition(params.TextDocument.URI, params.Position)
 	if !ok {
-		slog.Error("Document missing" + string(params.TextDocument.URI))
 		return nil, nil
 	}
-	point := pointFromPosition(params.Position)
-
-	rootNode := h.parse(string(doc)).RootNode()
-
-	node := rootNode.NamedDescendantForPointRange(point, point)
 
 	switch node.Kind() {
 	case "tag":

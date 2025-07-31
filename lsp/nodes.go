@@ -1,58 +1,23 @@
 package lsp
 
 import (
-	"strings"
+	"log/slog"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-func getTag(node *tree_sitter.Node, content string) Tag {
 
-	t := getNodeContent(*node, Document(content))
-	t = strings.TrimSpace(t)
-
-	return Tag(t)
-}
-
-func getLinkUrl(node *tree_sitter.Node, content string) (url string, ok bool) {
-
-	url, ok = fieldText(node, "url", content)
-
+func (h *LangHandler) DocAndNodeFromURIAndPosition(uri DocumentURI, position Position) (doc Document, node *tree_sitter.Node, ok bool) {
+	docData, ok := h.openedDocs.docDataFromURI(uri)
 	if !ok {
-		return
+		slog.Error("Document missing" + string(uri))
+		return "", nil, false
 	}
+	point := pointFromPosition(position)
 
-	url = strings.TrimSpace(url)
+	doc = docData.Content
+	node = docData.Tree.RootNode().NamedDescendantForPointRange(point, point)
 
-	return
-}
-
-func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bool) {
-
-	link, ok = fieldText(node, "title", content)
-
-	if !ok {
-		return
-	}
-
-	link = strings.TrimSpace(link)
-
-	return
-}
-
-func getWikilinkLink(node *tree_sitter.Node, content string) (link string, ok bool) {
-
-	link, ok = fieldText(node, "target", content)
-
-	if !ok {
-		return
-	}
-
-	if strings.Contains(link, "|") {
-		link = strings.Split(link, "|")[0]
-	}
-
-	link = strings.TrimSpace(link)
-
+	ok = true
 	return
 }

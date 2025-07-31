@@ -1,6 +1,24 @@
 package lsp
 
+import (
+	"path/filepath"
+	"strings"
+)
+
 type DocumentURI string
+
+func (d DocumentURI) getFileName() string {
+	return filepath.Base(string(d))
+}
+func (d DocumentURI) getGTarget(heading string) (gtarget GTarget, ok bool) {
+	filename := d.getFileName()
+	splits := strings.Split(filename, ".md")
+	if len(splits) < 1 {
+		return "", false
+	}
+
+	return GTarget(splits[0]+"#"+heading), true
+}
 
 type InitializeParams struct {
 	ProcessID             int                `json:"processId,omitempty"`
@@ -8,6 +26,21 @@ type InitializeParams struct {
 	InitializationOptions *InitializeOptions `json:"initializationOptions,omitempty"`
 	Capabilities          ClientCapabilities `json:"capabilities,omitempty"`
 	Trace                 string             `json:"trace,omitempty"`
+}
+
+type SemanticTokensLegend struct {
+	TokenTypes     []SemanticTokenType     `json:"tokenTypes"`
+	TokenModifiers []SemanticTokenModifier `json:"tokenModifiers"`
+}
+type SemanticTokensOptions struct {
+	Legend SemanticTokensLegend `json:"legend"`
+	Range  bool                 `json:"range"`
+	Full   bool                 `json:"full"`
+}
+
+type SemantiTokens struct {
+	ResultId string `json:"resultId"` // optional
+	Data     []uint `json:"data"`
 }
 
 type InitializeOptions struct {
@@ -52,6 +85,8 @@ type ServerCapabilities struct {
 	DocumentSymbolProvider     bool                         `json:"documentSymbolProvider,omitempty"`
 	CompletionProvider         *CompletionProvider          `json:"completionProvider,omitempty"`
 	DefinitionProvider         bool                         `json:"definitionProvider,omitempty"`
+	ReferencesProvider         bool                         `json:"referencesProvider,omitempty"`
+	SemanticTokensProvider     SemanticTokensOptions        `json:"semanticTokensProvider"`
 	DocumentFormattingProvider bool                         `json:"documentFormattingProvider,omitempty"`
 	RangeFormattingProvider    bool                         `json:"documentRangeFormattingProvider,omitempty"`
 	HoverProvider              bool                         `json:"hoverProvider,omitempty"`
@@ -89,6 +124,15 @@ type VersionedTextDocumentIdentifier struct {
 	Version int `json:"version"`
 }
 
+type SemanticTokensParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+}
+
+type SemanticTokensRangeParams struct {
+	TextDocumentIdentifier
+	Range Range `json:"range"`
+}
+
 type DidChangeTextDocumentParams struct {
 	TextDocument   VersionedTextDocumentIdentifier  `json:"textDocument"`
 	ContentChanges []TextDocumentContentChangeEvent `json:"contentChanges"`
@@ -106,7 +150,7 @@ type TextDocumentPositionParams struct {
 
 type CompletionParams struct {
 	TextDocumentPositionParams
-	CompletionContext CompletionContext `json:"contentChanges"`
+	CompletionContext CompletionContext `json:"context"`
 }
 
 type CompletionContext struct {
@@ -115,6 +159,10 @@ type CompletionContext struct {
 }
 
 type HoverParams struct {
+	TextDocumentPositionParams
+}
+
+type ReferencesParams struct {
 	TextDocumentPositionParams
 }
 
@@ -138,3 +186,111 @@ type Hover struct {
 	Contents any    `json:"contents"`
 	Range    *Range `json:"range"`
 }
+
+type CompletionItemKind int
+
+type CompletionItemTag int
+
+type InsertTextFormat int
+
+type TextEdit struct {
+	Range   Range  `json:"range"`
+	NewText string `json:"newText"`
+}
+
+type Command struct {
+	Title     string `json:"title" yaml:"title"`
+	Command   string `json:"command" yaml:"command"`
+	Arguments []any  `json:"arguments,omitempty" yaml:"arguments,omitempty"`
+	OS        string `json:"-" yaml:"os,omitempty"`
+}
+
+type CompletionItem struct {
+	Label               string              `json:"label"`
+	Kind                CompletionItemKind  `json:"kind,omitempty"`
+	Tags                []CompletionItemTag `json:"tags,omitempty"`
+	Detail              string              `json:"detail,omitempty"`
+	Documentation       string              `json:"documentation,omitempty"` // string | MarkupContent
+	Deprecated          bool                `json:"deprecated,omitempty"`
+	Preselect           bool                `json:"preselect,omitempty"`
+	SortText            string              `json:"sortText,omitempty"`
+	FilterText          string              `json:"filterText,omitempty"`
+	InsertText          string              `json:"insertText,omitempty"`
+	InsertTextFormat    InsertTextFormat    `json:"insertTextFormat,omitempty"`
+	TextEdit            *TextEdit           `json:"textEdit,omitempty"`
+	AdditionalTextEdits []TextEdit          `json:"additionalTextEdits,omitempty"`
+	CommitCharacters    []string            `json:"commitCharacters,omitempty"`
+	Command             *Command            `json:"command,omitempty"`
+	Data                any                 `json:"data,omitempty"`
+}
+
+const (
+	TextCompletion          CompletionItemKind = 1
+	MethodCompletion        CompletionItemKind = 2
+	FunctionCompletion      CompletionItemKind = 3
+	ConstructorCompletion   CompletionItemKind = 4
+	FieldCompletion         CompletionItemKind = 5
+	VariableCompletion      CompletionItemKind = 6
+	ClassCompletion         CompletionItemKind = 7
+	InterfaceCompletion     CompletionItemKind = 8
+	ModuleCompletion        CompletionItemKind = 9
+	PropertyCompletion      CompletionItemKind = 10
+	UnitCompletion          CompletionItemKind = 11
+	ValueCompletion         CompletionItemKind = 12
+	EnumCompletion          CompletionItemKind = 13
+	KeywordCompletion       CompletionItemKind = 14
+	SnippetCompletion       CompletionItemKind = 15
+	ColorCompletion         CompletionItemKind = 16
+	FileCompletion          CompletionItemKind = 17
+	ReferenceCompletion     CompletionItemKind = 18
+	FolderCompletion        CompletionItemKind = 19
+	EnumMemberCompletion    CompletionItemKind = 20
+	ConstantCompletion      CompletionItemKind = 21
+	StructCompletion        CompletionItemKind = 22
+	EventCompletion         CompletionItemKind = 23
+	OperatorCompletion      CompletionItemKind = 24
+	TypeParameterCompletion CompletionItemKind = 25
+)
+
+type SemanticTokenType string
+
+const (
+	NamespaceSematicTokenType     SemanticTokenType = "namespace"
+	TypeSematicTokenType          SemanticTokenType = "type"
+	ClassSematicTokenType         SemanticTokenType = "class"
+	EnumSematicTokenType          SemanticTokenType = "enum"
+	InterfaceSematicTokenType     SemanticTokenType = "interface"
+	StructSematicTokenType        SemanticTokenType = "struct"
+	TypeParameterSematicTokenType SemanticTokenType = "typeParameter"
+	ParameterSematicTokenType     SemanticTokenType = "parameter"
+	VariableSematicTokenType      SemanticTokenType = "variable"
+	PropertySematicTokenType      SemanticTokenType = "property"
+	EnumMemberSematicTokenType    SemanticTokenType = "enumMember"
+	EventSematicTokenType         SemanticTokenType = "event"
+	FunctionSematicTokenType      SemanticTokenType = "function"
+	MethodSematicTokenType        SemanticTokenType = "method"
+	MacroSematicTokenType         SemanticTokenType = "macro"
+	KeywordSematicTokenType       SemanticTokenType = "keyword"
+	ModifierSematicTokenType      SemanticTokenType = "modifier"
+	CommentSematicTokenType       SemanticTokenType = "comment"
+	StringSematicTokenType        SemanticTokenType = "string"
+	NumberSematicTokenType        SemanticTokenType = "number"
+	RegexpSematicTokenType        SemanticTokenType = "regexp"
+	OperatorSematicTokenType      SemanticTokenType = "operator"
+	DecoratorSematicTokenType     SemanticTokenType = "decorator"
+)
+
+type SemanticTokenModifier string
+
+const (
+	DeclarationSemanticTokenModifier    SemanticTokenModifier = "declaration"
+	DefinitionSemanticTokenModifier     SemanticTokenModifier = "definition"
+	ReadonlySemanticTokenModifier       SemanticTokenModifier = "readonly"
+	StaticSemanticTokenModifier         SemanticTokenModifier = "static"
+	DeprecatedSemanticTokenModifier     SemanticTokenModifier = "deprecated"
+	AbstractSemanticTokenModifier       SemanticTokenModifier = "abstract"
+	AsyncSemanticTokenModifier          SemanticTokenModifier = "async"
+	ModificationSemanticTokenModifier   SemanticTokenModifier = "modification"
+	DocumentationSemanticTokenModifier  SemanticTokenModifier = "documentation"
+	DefaultLibrarySemanticTokenModifier SemanticTokenModifier = "defaultLibrary"
+)
