@@ -1,9 +1,11 @@
-package lsp
+package server
 
 import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"sylmark/data"
+	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -14,14 +16,14 @@ func (h *LangHandler) handleTextDocumentSemanticTokensFull(_ context.Context, _ 
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
 
-	var params SemanticTokensParams
+	var params lsp.SemanticTokensParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
 
 	slog.Info("params raw = " + string(*req.Params))
 
-	tokens := h.getSemanticTokens(params.TextDocument.URI)
+	tokens := data.GetSemanticTokens(h.openedDocs, params.TextDocument.URI)
 
 	return tokens, nil
 }

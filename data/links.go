@@ -1,14 +1,15 @@
-package lsp
+package data
 
 import (
 	"strings"
+	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 func getLinkUrl(node *tree_sitter.Node, content string) (url string, ok bool) {
 
-	url, ok = fieldText(node, "url", content)
+	url, ok = lsp.FieldText(node, "url", content)
 
 	if !ok {
 		return url, ok
@@ -21,7 +22,7 @@ func getLinkUrl(node *tree_sitter.Node, content string) (url string, ok bool) {
 
 func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bool) {
 
-	link, ok = fieldText(node, "title", content)
+	link, ok = lsp.FieldText(node, "title", content)
 
 	if !ok {
 		return
@@ -34,7 +35,7 @@ func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bo
 
 func getWikilinkLink(node *tree_sitter.Node, content string) (link string, ok bool) {
 
-	link, ok = fieldText(node, "target", content)
+	link, ok = lsp.FieldText(node, "target", content)
 
 	if !ok {
 		return

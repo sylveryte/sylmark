@@ -1,29 +1,30 @@
-package lsp
+package data
 
 import (
 	"log/slog"
+	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type GLink struct {
-	Def  Location
-	Refs []Location
+	Def  lsp.Location
+	Refs []lsp.Location
 }
 type Store struct {
-	Tags   map[Tag][]Location
+	Tags   map[Tag][]lsp.Location
 	GLinks map[GTarget][]GLink
 }
 
-func newStore() Store {
+func NewStore() Store {
 	return Store{
-		Tags:   map[Tag][]Location{},
+		Tags:   map[Tag][]lsp.Location{},
 		GLinks: map[GTarget][]GLink{},
 	}
 }
 
-func (store *Store) loadData(uri DocumentURI, content string, rootNode *tree_sitter.Node) {
-	TraverseNodeWith(rootNode, func(n *tree_sitter.Node) {
+func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree_sitter.Node) {
+	lsp.TraverseNodeWith(rootNode, func(n *tree_sitter.Node) {
 		switch n.Kind() {
 		case "wikilink":
 			{
@@ -36,7 +37,7 @@ func (store *Store) loadData(uri DocumentURI, content string, rootNode *tree_sit
 					slog.Error("Could not extract heading")
 					return
 				}
-				glink, ok := uri.getGTarget(heading)
+				glink, ok := GetGTarget(heading, uri)
 				if !ok {
 					slog.Error("Could not form glink")
 					return
@@ -57,14 +58,14 @@ func (store *Store) loadData(uri DocumentURI, content string, rootNode *tree_sit
 
 // removes data of tempStore from store
 // removes on basis f URI only
-func (store *Store) subtractStore(tempStore *Store) {
+func (store *Store) SubtractStore(tempStore *Store) {
 	s := *store
 	ts := *tempStore
 	if len(ts.Tags) > 0 {
 		for k, v := range ts.Tags {
 			sv, found := s.Tags[k]
 			if found {
-				newSv := []Location{}
+				newSv := []lsp.Location{}
 				for _, loc := range sv {
 					if loc.URI != v[0].URI {
 						newSv = append(newSv, loc)
@@ -85,7 +86,7 @@ func (store *Store) subtractStore(tempStore *Store) {
 }
 
 // appends data of tempStore into store
-func (store *Store) mergeStore(tempStore *Store) {
+func (store *Store) MergeStore(tempStore *Store) {
 	s := *store
 	ts := *tempStore
 
@@ -100,6 +101,4 @@ func (store *Store) mergeStore(tempStore *Store) {
 	}
 
 	// syltodo TODO 🚧 wikilink headings n all
-
-	return
 }

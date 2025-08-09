@@ -1,10 +1,12 @@
-package lsp
+package server
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sylmark/data"
+	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -15,7 +17,7 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
 
-	var params HoverParams
+	var params lsp.HoverParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
@@ -30,10 +32,10 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 	switch node.Kind() {
 	case "tag":
 		{
-			r := getRange(node)
-			tag := getTag(node, string(doc))
-			totalRefs := h.getTagRefs(tag)
-			return Hover{
+			r := lsp.GetRange(node)
+			tag := data.GetTag(node, string(doc))
+			totalRefs := h.store.GetTagRefs(tag)
+			return lsp.Hover{
 				Contents: fmt.Sprintf("%d refs of %s", totalRefs, tag),
 				Range:    &r,
 			}, nil

@@ -1,8 +1,9 @@
-package lsp
+package server
 
 import (
 	"context"
 	"encoding/json"
+	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -13,7 +14,7 @@ func (h *LangHandler) handleTextDocumentDidOpen(_ context.Context, _ *jsonrpc2.C
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
 
-	var params DidOpenTextDocumentParams
+	var params lsp.DidOpenTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}

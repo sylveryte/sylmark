@@ -1,9 +1,11 @@
-package lsp
+package server
 
 import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"sylmark/data"
+	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -13,14 +15,14 @@ func (h *LangHandler) handleInitialize(_ context.Context, conn *jsonrpc2.Conn, r
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
 
-	var params InitializeParams
+	var params lsp.InitializeParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
 
 	// The rootUri of the workspace. Is null if no folder is open or no rootmakers added
 	if params.RootURI != "" {
-		rootPath, err := dirPathFromURI(params.RootURI)
+		rootPath, err := data.DirPathFromURI(params.RootURI)
 		if err != nil {
 			return nil, err
 		}
@@ -28,20 +30,20 @@ func (h *LangHandler) handleInitialize(_ context.Context, conn *jsonrpc2.Conn, r
 		h.addRootPathAndLoad(rootPath)
 	}
 
-	return InitializeResult{
-		Capabilities: ServerCapabilities{
+	return lsp.InitializeResult{
+		Capabilities: lsp.ServerCapabilities{
 			HoverProvider:    true,
-			TextDocumentSync: TDSKFull,
-			CompletionProvider: &CompletionProvider{
+			TextDocumentSync: lsp.TDSKFull,
+			CompletionProvider: &lsp.CompletionProvider{
 				ResolveProvider:   true,
 				TriggerCharacters: []string{"#", "[["},
 			},
 			DefinitionProvider: true,
 			ReferencesProvider: true,
-			SemanticTokensProvider: SemanticTokensOptions{
-				Legend: SemanticTokensLegend{
-					TokenTypes:     []SemanticTokenType{ClassSematicTokenType},
-					TokenModifiers: []SemanticTokenModifier{},
+			SemanticTokensProvider: lsp.SemanticTokensOptions{
+				Legend: lsp.SemanticTokensLegend{
+					TokenTypes:     []lsp.SemanticTokenType{lsp.ClassSematicTokenType},
+					TokenModifiers: []lsp.SemanticTokenModifier{},
 				},
 				Full:  true,
 				Range: false,

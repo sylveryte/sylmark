@@ -1,4 +1,4 @@
-package lsp
+package data
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
@@ -23,12 +24,12 @@ func newDocumentData(doc Document, tree *tree_sitter.Tree) *DocumentData {
 	}
 }
 
-type DocumentStore map[DocumentURI]DocumentData
+type DocumentStore map[lsp.DocumentURI]DocumentData
 
-func newDocumentStore() DocumentStore {
-	return map[DocumentURI]DocumentData{}
+func NewDocumentStore() DocumentStore {
+	return map[lsp.DocumentURI]DocumentData{}
 }
-func (store *DocumentStore) removeDoc(uri DocumentURI) (docData DocumentData, found bool) {
+func (store *DocumentStore) RemoveDoc(uri lsp.DocumentURI) (docData DocumentData, found bool) {
 	if store == nil {
 		slog.Error("DocumentStore is empty")
 		return DocumentData{}, false
@@ -42,7 +43,7 @@ func (store *DocumentStore) removeDoc(uri DocumentURI) (docData DocumentData, fo
 }
 
 // returns ok
-func (store *DocumentStore) addDoc(uri DocumentURI, doc Document, tree *tree_sitter.Tree) bool {
+func (store *DocumentStore) AddDoc(uri lsp.DocumentURI, doc Document, tree *tree_sitter.Tree) bool {
 	if store == nil {
 		slog.Error("DocumentStore not defined")
 		return false
@@ -53,7 +54,7 @@ func (store *DocumentStore) addDoc(uri DocumentURI, doc Document, tree *tree_sit
 	return true
 }
 
-func (store *DocumentStore) updateDoc(uri DocumentURI, change TextDocumentContentChangeEvent, h *LangHandler) (newDocData DocumentData, oldDocData DocumentData, ok bool) {
+func (store *DocumentStore) UpdateDoc(uri lsp.DocumentURI, change lsp.TextDocumentContentChangeEvent, parse func(content string) *tree_sitter.Tree) (newDocData DocumentData, oldDocData DocumentData, ok bool) {
 	if store == nil {
 		slog.Error("DocumentStore not defined")
 		return DocumentData{}, DocumentData{}, false
@@ -62,7 +63,7 @@ func (store *DocumentStore) updateDoc(uri DocumentURI, change TextDocumentConten
 
 	if change.RangeLength == 0 {
 		doc := Document(change.Text)
-		tree := h.parse(change.Text)
+		tree := parse(change.Text)
 		oldDocData := s[uri]
 		newDocData := *newDocumentData(doc, tree)
 		s[uri] = newDocData
@@ -83,7 +84,7 @@ func (store *DocumentStore) updateDoc(uri DocumentURI, change TextDocumentConten
 
 }
 
-func (store *DocumentStore) docDataFromURI(uri DocumentURI) (docData DocumentData, found bool) {
+func (store *DocumentStore) DocDataFromURI(uri lsp.DocumentURI) (docData DocumentData, found bool) {
 	if store == nil {
 		return DocumentData{}, false
 	}
@@ -93,7 +94,7 @@ func (store *DocumentStore) docDataFromURI(uri DocumentURI) (docData DocumentDat
 	return
 }
 
-func dirPathFromURI(uri DocumentURI) (path string, er error) {
+func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {
 	parsedUrl, err := url.Parse(string(uri))
 	if err != nil {
 		return "", err
@@ -114,7 +115,7 @@ func dirPathFromURI(uri DocumentURI) (path string, er error) {
 	return dir, nil
 }
 
-func uriFromPath(path string) (DocumentURI, error) {
+func UriFromPath(path string) (lsp.DocumentURI, error) {
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -126,18 +127,10 @@ func uriFromPath(path string) (DocumentURI, error) {
 		Path:   uriPath,
 	}
 
-	return DocumentURI(u.String()), nil
+	return lsp.DocumentURI(u.String()), nil
 }
 
-func locationFromURINode(uri DocumentURI, node *tree_sitter.Node) Location {
-
-	return Location{
-		URI:   uri,
-		Range: getRange(node),
-	}
-
-}
-func contentFromDocPath(mdDocPath string) string {
+func ContentFromDocPath(mdDocPath string) string {
 	contentByte, err := os.ReadFile(mdDocPath)
 	if err != nil {
 		slog.Error("Failed to read file " + mdDocPath + err.Error())

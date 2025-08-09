@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sylmark/lsp"
+	"sylmark/server"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -19,7 +19,7 @@ func main() {
 	ctx := context.Background()
 	stream := jsonrpc2.NewBufferedStream(stdwrc{}, jsonrpc2.VSCodeObjectCodec{})
 
-	handler := lsp.NewHandler()
+	handler := server.NewHandler()
 	handler.SetupGrammars()
 	defer handler.Parser.Close()
 	jsonHandler := jsonrpc2.HandlerWithError(handler.Handle)

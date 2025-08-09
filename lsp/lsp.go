@@ -2,22 +2,21 @@ package lsp
 
 import (
 	"path/filepath"
-	"strings"
+
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type DocumentURI string
 
-func (d DocumentURI) getFileName() string {
+func (d DocumentURI) GetFileName() string {
 	return filepath.Base(string(d))
 }
-func (d DocumentURI) getGTarget(heading string) (gtarget GTarget, ok bool) {
-	filename := d.getFileName()
-	splits := strings.Split(filename, ".md")
-	if len(splits) < 1 {
-		return "", false
-	}
 
-	return GTarget(splits[0]+"#"+heading), true
+func (d DocumentURI) LocationOf(node *tree_sitter.Node) Location {
+	return Location{
+		URI:   d,
+		Range: GetRange(node),
+	}
 }
 
 type InitializeParams struct {

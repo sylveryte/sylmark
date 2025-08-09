@@ -1,10 +1,11 @@
-package lsp
+package server
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -15,7 +16,7 @@ func (h *LangHandler) handleTextDocumentCompletion(_ context.Context, _ *jsonrpc
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
 
-	var params CompletionParams
+	var params lsp.CompletionParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func (h *LangHandler) handleTextDocumentCompletion(_ context.Context, _ *jsonrpc
 	// completions := []CompletionItem{}
 
 	// Tags
-	tagCompletions := h.store.getTagCompletions()
+	tagCompletions := h.store.GetTagCompletions()
 
 	// wiklink
 	// TODO 🚧

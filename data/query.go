@@ -1,29 +1,32 @@
-package lsp
+package data
 
 import (
 	"log/slog"
+	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-func (h *LangHandler) getTagRefs(tag Tag) int {
+func getSemanticToken(node *tree_sitter.Node, tokenTypeIndex uint, tokenModifierIndex uint) []uint {
 
-	clocs, found := h.store.Tags[tag]
-	if found {
-		return len(clocs)
+	return []uint{
+		node.StartPosition().Row,    //line
+		node.StartPosition().Column, //char
+		// node.EndPosition().Column - node.StartPosition().Column, //length
+		node.EndByte() - node.StartByte(), //length
+		tokenTypeIndex,
+		tokenModifierIndex,
 	}
-
-	return 0
 }
 
-func (h *LangHandler) getSemanticTokens(uri DocumentURI) SemantiTokens {
+func  GetSemanticTokens(openedDocs DocumentStore, uri lsp.DocumentURI) lsp.SemantiTokens {
 	intTokens := []uint{}
 
 	// get tokens and convert them to intTokens
-	docData, found := h.openedDocs[uri]
+	docData, found := openedDocs[uri]
 	if !found {
 		slog.Info("Shocking doc not found for SemantiTokens" + string(uri))
-		return SemantiTokens{
+		return lsp.SemantiTokens{
 			Data: []uint{},
 		}
 	}
@@ -31,7 +34,7 @@ func (h *LangHandler) getSemanticTokens(uri DocumentURI) SemantiTokens {
 	// these token poistions are relative to last one hence lastLastLine
 	var lastLine uint
 	var lastStart uint
-	TraverseNodeWith(docData.Tree.RootNode(), func(n *tree_sitter.Node) {
+	lsp.TraverseNodeWith(docData.Tree.RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
 		case "tag":
 			{
@@ -49,19 +52,7 @@ func (h *LangHandler) getSemanticTokens(uri DocumentURI) SemantiTokens {
 		}
 	})
 
-	return SemantiTokens{
+	return lsp.SemantiTokens{
 		Data: intTokens,
-	}
-}
-
-func getSemanticToken(node *tree_sitter.Node, tokenTypeIndex uint, tokenModifierIndex uint) []uint {
-
-	return []uint{
-		node.StartPosition().Row,    //line
-		node.StartPosition().Column, //char
-		// node.EndPosition().Column - node.StartPosition().Column, //length
-		node.EndByte() - node.StartByte(), //length
-		tokenTypeIndex,
-		tokenModifierIndex,
 	}
 }

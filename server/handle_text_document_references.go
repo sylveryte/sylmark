@@ -1,8 +1,10 @@
-package lsp
+package server
 
 import (
 	"context"
 	"encoding/json"
+	"sylmark/data"
+	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -13,7 +15,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
 
-	var params ReferencesParams
+	var params lsp.ReferencesParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
@@ -26,7 +28,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 	switch node.Kind() {
 	case "tag":
 		{
-			tag := getTag(node, string(doc))
+			tag := data.GetTag(node, string(doc))
 			locs := h.store.GetTagReferences(tag)
 			return locs, nil
 		}

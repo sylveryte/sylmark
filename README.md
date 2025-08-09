@@ -28,3 +28,9 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [ ] Wikilinks with sub headings
   - [ ] Wikilinks within file
   - [ ] ?Links Any File
+
+## Structure
+
+- Package flow
+
+  `main <- handle <- data <- lsp`
