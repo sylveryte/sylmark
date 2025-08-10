@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -36,7 +35,6 @@ func setLogger() *os.File {
 	}
 	logger := slog.New(slog.NewTextHandler(logFile, nil))
 	slog.SetDefault(logger)
-	fmt.Println("Logging successfully configured")
 	return logFile
 }
 

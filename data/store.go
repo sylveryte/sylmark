@@ -1,26 +1,26 @@
 package data
 
 import (
-	"log/slog"
 	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-type GLink struct {
-	Def  lsp.Location
-	Refs []lsp.Location
-}
 type Store struct {
-	Tags   map[Tag][]lsp.Location
-	GLinks map[GTarget][]GLink
+	tags   map[Tag][]lsp.Location
+	gLinkStore GLinkStore
 }
 
 func NewStore() Store {
 	return Store{
-		Tags:   map[Tag][]lsp.Location{},
-		GLinks: map[GTarget][]GLink{},
+		tags:   map[Tag][]lsp.Location{},
+		gLinkStore: NewGlinkStore(),
 	}
+}
+
+// in case needed to skip some
+type LoadDataConfig struct {
+	Wikilink bool
 }
 
 func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree_sitter.Node) {
@@ -28,21 +28,14 @@ func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree
 		switch n.Kind() {
 		case "wikilink":
 			{
-				getWikilinkLink(n, content)
+				 getWikilinkLink(n, content)
+				// if ok {
+				// 	slog.Info("got wikilink " + link)
+				// }
 			}
 		case "heading":
 			{
-				heading, ok := getHeadingTitle(n, content)
-				if !ok {
-					slog.Error("Could not extract heading")
-					return
-				}
-				glink, ok := GetGTarget(heading, uri)
-				if !ok {
-					slog.Error("Could not form glink")
-					return
-				}
-				slog.Info("GTarget is " + string(glink))
+				store.AddGTarget(n, uri, &content)
 			}
 		case "tag":
 			{
@@ -61,9 +54,9 @@ func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree
 func (store *Store) SubtractStore(tempStore *Store) {
 	s := *store
 	ts := *tempStore
-	if len(ts.Tags) > 0 {
-		for k, v := range ts.Tags {
-			sv, found := s.Tags[k]
+	if len(ts.tags) > 0 {
+		for k, v := range ts.tags {
+			sv, found := s.tags[k]
 			if found {
 				newSv := []lsp.Location{}
 				for _, loc := range sv {
@@ -73,9 +66,9 @@ func (store *Store) SubtractStore(tempStore *Store) {
 					}
 				}
 				if len(newSv) == 0 {
-					delete(s.Tags, k)
+					delete(s.tags, k)
 				} else {
-					s.Tags[k] = newSv
+					s.tags[k] = newSv
 				}
 			}
 		}
@@ -90,12 +83,12 @@ func (store *Store) MergeStore(tempStore *Store) {
 	s := *store
 	ts := *tempStore
 
-	if len(ts.Tags) > 0 {
-		for k, v := range ts.Tags {
-			if sv, found := s.Tags[k]; found {
-				s.Tags[k] = append(sv, v...)
+	if len(ts.tags) > 0 {
+		for k, v := range ts.tags {
+			if sv, found := s.tags[k]; found {
+				s.tags[k] = append(sv, v...)
 			} else {
-				s.Tags[k] = v
+				s.tags[k] = v
 			}
 		}
 	}

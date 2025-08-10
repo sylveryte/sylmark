@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
 
@@ -20,8 +19,6 @@ func (h *LangHandler) handleTextDocumentSemanticTokensFull(_ context.Context, _ 
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
-
-	slog.Info("params raw = " + string(*req.Params))
 
 	tokens := data.GetSemanticTokens(h.openedDocs, params.TextDocument.URI)
 

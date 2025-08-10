@@ -14,13 +14,13 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 
 - [x] Minimal Treesitter parser
   - [tree_sitter_sylmark](https://github.com/sylveryte/tree-sitter-sylmark)
-- [/] Hover
-  - [/] Tag
+- [x] Hover
+  - [x] Tag
   - [ ] Wikilinks
-- [ ] Completions
-  - [ ] Hash Tags
-  - [ ] Wikilinks File
-  - [ ] Wikilinks with sub headings
+- [/] Completions
+  - [x] Hash Tags
+  - [/] Wikilinks File
+  - [/] Wikilinks with sub headings
   - [ ] Wikilinks within file
   - [ ] ?Links Any File
 - [ ] Go To Definitions
@@ -28,6 +28,9 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [ ] Wikilinks with sub headings
   - [ ] Wikilinks within file
   - [ ] ?Links Any File
+- [/] Go to references
+  - [x] Tags
+  - [ ] Wikilinks
 
 ## Structure
 

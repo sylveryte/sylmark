@@ -1,6 +1,7 @@
 package data
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -29,6 +30,18 @@ type DocumentStore map[lsp.DocumentURI]DocumentData
 func NewDocumentStore() DocumentStore {
 	return map[lsp.DocumentURI]DocumentData{}
 }
+
+
+// syltodo TODO optimize it
+func (doc *Document) GetLine(lineNumber int) string {
+	for i, v := range bytes.Split([]byte(*doc), []byte("\n")) {
+		if i == lineNumber {
+			return string(v)
+		}
+	}
+	return ""
+}
+
 func (store *DocumentStore) RemoveDoc(uri lsp.DocumentURI) (docData DocumentData, found bool) {
 	if store == nil {
 		slog.Error("DocumentStore is empty")

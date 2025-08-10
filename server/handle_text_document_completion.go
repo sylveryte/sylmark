@@ -3,8 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"log/slog"
 	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
@@ -21,24 +19,6 @@ func (h *LangHandler) handleTextDocumentCompletion(_ context.Context, _ *jsonrpc
 		return nil, err
 	}
 
-	slog.Info("params raw = " + string(*req.Params))
-	// if params.CompletionContext.TriggerCharacter != nil {
-	// 	char := *params.CompletionContext.TriggerCharacter
-	// 	if char == "#" {
-	// 		slog.Info("Params TriggerCharacter------------>" + *params.CompletionContext.TriggerCharacter)
-	//
-	// 	}
-	// }
+	return h.store.GetCompletions(params, h.openedDocs)
 
-	// completions := []CompletionItem{}
-
-	// Tags
-	tagCompletions := h.store.GetTagCompletions()
-
-	// wiklink
-	// TODO 🚧
-
-	slog.Info(fmt.Sprintf("Total Completions ------------>%d", len(tagCompletions)))
-
-	return tagCompletions, nil
 }

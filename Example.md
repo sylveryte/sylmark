@@ -7,7 +7,10 @@ someting text before [[README]] afte
 
 ## Objective
 
-#kol
+[[README#Entities]]
+[[Example#Objective]]
+
+Cool
 
 - [[coolfile]]
 - Cool [[superfile#ks]]

@@ -10,7 +10,7 @@ import (
 	"github.com/sourcegraph/jsonrpc2"
 )
 
-func (h *LangHandler) handleInitialize(_ context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
+func (h *LangHandler) handleInitialize(_ context.Context, _ *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
 	if req.Params == nil {
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
@@ -36,7 +36,7 @@ func (h *LangHandler) handleInitialize(_ context.Context, conn *jsonrpc2.Conn, r
 			TextDocumentSync: lsp.TDSKFull,
 			CompletionProvider: &lsp.CompletionProvider{
 				ResolveProvider:   true,
-				TriggerCharacters: []string{"#", "[["},
+				TriggerCharacters: []string{"[[", "#", "ln"},
 			},
 			DefinitionProvider: true,
 			ReferencesProvider: true,

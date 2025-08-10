@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sylmark/data"
 	"sylmark/lsp"
+	"sylmark/utils"
+	"time"
 
 	"github.com/sourcegraph/jsonrpc2"
 	tree_sitter_sylmark "github.com/sylveryte/tree-sitter-sylmark/bindings/go"
@@ -18,17 +20,27 @@ type Config struct {
 	RootMarkers *[]string `yaml:"root-markers" json:"rootMarkers"`
 }
 
+type ServerDebouncers = struct {
+	DocumentDidChange   *utils.SylDebouncer
+	SemantickTokensFull *utils.SylDebouncer
+}
+
 type LangHandler struct {
 	Parser     *tree_sitter.Parser
 	rootPath   string
 	store      data.Store
 	openedDocs data.DocumentStore
+	Debouncers *ServerDebouncers
 }
 
 func NewHandler() (hanlder *LangHandler) {
 	return &LangHandler{
-		store: data.NewStore(),
+		store:      data.NewStore(),
 		openedDocs: data.NewDocumentStore(),
+		Debouncers: &ServerDebouncers{
+			DocumentDidChange:   utils.NewSylDebouncer(300 * time.Millisecond),
+			SemantickTokensFull: utils.NewSylDebouncer(400 * time.Millisecond),
+		},
 	}
 }
 
@@ -53,7 +65,6 @@ func (h *LangHandler) loadAllClosedDocsData() {
 		return nil
 	})
 }
-
 
 func (h *LangHandler) loadDocData(mdDocPath string) {
 	content := data.ContentFromDocPath(mdDocPath)
@@ -100,12 +111,10 @@ func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocument
 	tempStoreNew.LoadData(uri, string(updatedDocData.Content), updatedDocData.Tree.RootNode())
 
 	// syltodo TODO optimze this flow it
-	// do the deltas
 	h.store.SubtractStore(&tempStoreOld)
 	h.store.MergeStore(&tempStoreNew)
 
 }
-
 
 func (h *LangHandler) SetupGrammars() {
 	parser := tree_sitter.NewParser()

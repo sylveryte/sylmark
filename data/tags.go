@@ -10,7 +10,7 @@ import (
 
 func (s *Store) GetTagRefs(tag Tag) int {
 
-	clocs, found := s.Tags[tag]
+	clocs, found := s.tags[tag]
 	if found {
 		return len(clocs)
 	}
@@ -19,12 +19,12 @@ func (s *Store) GetTagRefs(tag Tag) int {
 }
 
 func (s *Store) GetTagReferences(tag Tag) []lsp.Location {
-	return s.Tags[tag]
+	return s.tags[tag]
 }
 
 func (s *Store) GetTagCompletions() []lsp.CompletionItem {
 	completions := []lsp.CompletionItem{}
-	for t, v := range s.Tags {
+	for t, v := range s.tags {
 		completions = append(completions, lsp.CompletionItem{
 			Label:         string(t),
 			Kind:          lsp.ReferenceCompletion,
@@ -44,11 +44,11 @@ func (s *Store) AddTag(node *tree_sitter.Node, uri lsp.DocumentURI, content *str
 
 	tag := GetTag(node, *content)
 	location := uri.LocationOf(node)
-	locations, found := s.Tags[tag]
+	locations, found := s.tags[tag]
 	if found {
-		s.Tags[tag] = append(locations, location)
+		s.tags[tag] = append(locations, location)
 	} else {
-		s.Tags[tag] = []lsp.Location{location}
+		s.tags[tag] = []lsp.Location{location}
 	}
 
 	return true
