@@ -12,6 +12,12 @@ func (d DocumentURI) GetFileName() string {
 	return filepath.Base(string(d))
 }
 
+func (d DocumentURI) LocationOfFile() Location {
+	return Location{
+		URI: d,
+	}
+}
+
 func (d DocumentURI) LocationOf(node *tree_sitter.Node) Location {
 	return Location{
 		URI:   d,
@@ -158,6 +164,10 @@ type CompletionContext struct {
 }
 
 type HoverParams struct {
+	TextDocumentPositionParams
+}
+
+type DefinitionParams struct {
 	TextDocumentPositionParams
 }
 

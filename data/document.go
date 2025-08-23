@@ -31,6 +31,9 @@ func NewDocumentStore() DocumentStore {
 	return map[lsp.DocumentURI]DocumentData{}
 }
 
+func SplitLines(content string) {
+
+}
 
 // syltodo TODO optimize it
 func (doc *Document) GetLine(lineNumber int) string {
@@ -115,6 +118,9 @@ func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {
 
 	filePath := parsedUrl.Path
 	dir := filePath
+	if err != nil {
+		return "", err
+	}
 	info, err := os.Stat(filePath)
 	if err != nil {
 		return "", err
@@ -126,6 +132,15 @@ func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {
 
 	dir = filepath.Clean(dir)
 	return dir, nil
+}
+
+func PathFromURI(uri lsp.DocumentURI) (string, error) {
+	parsedUrl, err := url.Parse(string(uri))
+	if err != nil {
+		return "", err
+	}
+
+	return parsedUrl.Path, nil
 }
 
 func UriFromPath(path string) (lsp.DocumentURI, error) {
@@ -144,9 +159,22 @@ func UriFromPath(path string) (lsp.DocumentURI, error) {
 }
 
 func ContentFromDocPath(mdDocPath string) string {
+	slog.Info("reading file " + mdDocPath)
 	contentByte, err := os.ReadFile(mdDocPath)
 	if err != nil {
 		slog.Error("Failed to read file " + mdDocPath + err.Error())
 	}
 	return string(contentByte)
+}
+
+func GetExcerpt(content string, rng lsp.Range, excerptLength int16) string {
+	lines := bytes.Split([]byte(content), []byte("\n"))
+	startLine := rng.Start.Line
+	endLine := startLine + int(excerptLength)
+
+	if endLine >= len(lines) {
+		endLine = len(lines) - 1
+	}
+	exLines := lines[startLine:endLine]
+	return string(bytes.Join(exLines, []byte("\n")))
 }

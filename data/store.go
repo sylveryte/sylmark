@@ -1,34 +1,36 @@
 package data
 
 import (
+	"net/url"
 	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type Store struct {
-	tags   map[Tag][]lsp.Location
+	tags       map[Tag][]lsp.Location
 	gLinkStore GLinkStore
 }
 
 func NewStore() Store {
 	return Store{
-		tags:   map[Tag][]lsp.Location{},
+		tags:       map[Tag][]lsp.Location{},
 		gLinkStore: NewGlinkStore(),
 	}
 }
 
-// in case needed to skip some
-type LoadDataConfig struct {
-	Wikilink bool
-}
-
 func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree_sitter.Node) {
+	unscapedUri, err := url.QueryUnescape(string(uri))
+	if err == nil {
+		uri = lsp.DocumentURI(unscapedUri)
+	}
+
+	store.AddFileGTarget(uri)
 	lsp.TraverseNodeWith(rootNode, func(n *tree_sitter.Node) {
 		switch n.Kind() {
 		case "wikilink":
 			{
-				 getWikilinkLink(n, content)
+				GetWikilinkTarget(n, content, uri)
 				// if ok {
 				// 	slog.Info("got wikilink " + link)
 				// }

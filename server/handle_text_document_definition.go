@@ -6,26 +6,27 @@ import (
 	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
+	"sylmark/utils"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
 
-func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
+func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
 
 	if req.Params == nil {
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
 
-	var params lsp.ReferencesParams
+	var params lsp.DefinitionParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
-
 	doc, node, ok := h.DocAndNodeFromURIAndPosition(params.TextDocument.URI, params.Position)
 	if !ok {
 		return nil, nil
 	}
 
+	slog.Info("Store is " + utils.StringThis(h.store))
 	switch node.Kind() {
 	case "tag":
 		{
@@ -33,13 +34,14 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 			locs := h.store.GetTagReferences(tag)
 			return locs, nil
 		}
-	case "wikilink", "wikitarget", "heading", "title":
+	case "wikilink", "wikitarget":
 		{
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
-			if !ok {
-				slog.Warn("No valid gtarget")
+			if ok {
+				return h.store.GetGTargetDefinition(target), nil
+			} else {
+				slog.Warn("Wikilink definition not found" + string(target))
 			}
-			// syltodo get referencess
 		}
 	}
 

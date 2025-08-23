@@ -1,6 +1,10 @@
 package data
 
 import (
+	"fmt"
+	"iter"
+	"log/slog"
+	"maps"
 	"sylmark/lsp"
 )
 
@@ -24,6 +28,8 @@ func newGlinkMap() map[lsp.DocumentURI]glink {
 func NewGlinkStore() GLinkStore {
 	return map[GTarget]map[lsp.DocumentURI]glink{}
 }
+
+// returns ok
 func (glinkStore *GLinkStore) AddRef(target GTarget, loc lsp.Location) bool {
 	if glinkStore == nil {
 		return false
@@ -36,10 +42,12 @@ func (glinkStore *GLinkStore) AddRef(target GTarget, loc lsp.Location) bool {
 
 		if found {
 			glink.refs = append(glink.refs, loc)
+			return true
 		} else {
 			glink := newGlink()
 			glink.refs = append(glink.refs, loc)
 			glinkmap[loc.URI] = glink
+			return true
 		}
 	} else {
 		glinkmap = newGlinkMap()
@@ -47,10 +55,10 @@ func (glinkStore *GLinkStore) AddRef(target GTarget, loc lsp.Location) bool {
 		glink.refs = append(glink.refs, loc)
 		glinkmap[loc.URI] = glink
 		gs[target] = glinkmap
+		return true
 	}
-
-	return false
 }
+
 func (glinkStore *GLinkStore) GetTargets() []GTarget {
 	targets := []GTarget{}
 	if glinkStore == nil {
@@ -71,6 +79,8 @@ func (glinkStore *GLinkStore) AddDef(target GTarget, uri lsp.DocumentURI, rng ls
 	}
 	gs := *glinkStore
 
+	slog.Info(fmt.Sprintf("addingdef GTarget=[%s] and uri=[%s]", target, uri))
+
 	glinkmap, found := gs[target]
 	if !found {
 		glinkmap = newGlinkMap()
@@ -85,15 +95,61 @@ func (glinkStore *GLinkStore) AddDef(target GTarget, uri lsp.DocumentURI, rng ls
 		glink, found := glinkmap[uri]
 		if !found {
 			glink = newGlink()
+			glink.def = lsp.Location{
+				URI:   uri,
+				Range: rng,
+			}
 			glinkmap[uri] = glink
-		}
-		glink.def = lsp.Location{
-			URI:   uri,
-			Range: rng,
+		} else {
+			glink.def = lsp.Location{
+				URI:   uri,
+				Range: rng,
+			}
 		}
 	}
 
-	return false
+	// syldoto delete this block
+	nglink, nfound := glinkmap[uri]
+	if nfound {
+		slog.Info(fmt.Sprintf("newlyadded glink.uri=[%s] and uri=[%s]", nglink.def.URI, uri))
+	}
+
+	return true
+}
+
+func (glinkStore *GLinkStore) GetGLinks(target GTarget) (glinks iter.Seq[glink], count int, gfound bool) {
+	if glinkStore == nil {
+		return glinks, 0, gfound
+	}
+	gs := *glinkStore
+
+	glinkmap, gfound := gs[target]
+	if !gfound {
+		return glinks, 0, gfound
+	}
+
+	glinks = maps.Values(glinkmap)
+	linksCount := len(glinkmap)
+
+	return glinks, linksCount, gfound
+}
+func (glinkStore *GLinkStore) GetRefs(target GTarget) (locs []lsp.Location, gfound bool) {
+	if glinkStore == nil {
+		return locs, gfound
+	}
+	gs := *glinkStore
+
+	glinkmap, gfound := gs[target]
+	if !gfound {
+		return locs, gfound
+	}
+	for k, v := range glinkmap {
+		if k != "" {
+			locs = append(locs, v.refs...)
+		}
+	}
+
+	return locs, len(locs) > 0
 }
 
 func (glinkStore *GLinkStore) GetDefs(target GTarget) (locs []lsp.Location, gfound bool) {
@@ -102,14 +158,14 @@ func (glinkStore *GLinkStore) GetDefs(target GTarget) (locs []lsp.Location, gfou
 	}
 	gs := *glinkStore
 
-	glinkmap, found := gs[target]
-	if !found {
+	glinkmap, gfound := gs[target]
+	if !gfound {
 		return locs, gfound
 	}
 
 	for k, v := range glinkmap {
-		found = true
-		if k != "" {
+		gfound = true
+		if k != "" && v.def.URI != "" {
 			locs = append(locs, v.def)
 		}
 	}

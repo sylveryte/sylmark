@@ -12,12 +12,21 @@ import (
 	"time"
 
 	"github.com/sourcegraph/jsonrpc2"
-	tree_sitter_sylmark "github.com/sylveryte/tree-sitter-sylmark/bindings/go"
+	tree_sitter_sylmark "codeberg.org/sylveryte/tree-sitter-sylmark/bindings/go"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type Config struct {
-	RootMarkers *[]string `yaml:"root-markers" json:"rootMarkers"`
+	RootMarkers   *[]string `yaml:"root-markers" json:"rootMarkers"`
+	ExcerptLength int16
+}
+
+func NewConfig() Config {
+	rmakers := []string{".sylroot"}
+	return Config{
+		RootMarkers:   &rmakers,
+		ExcerptLength: 10,
+	}
 }
 
 type ServerDebouncers = struct {
@@ -31,12 +40,14 @@ type LangHandler struct {
 	store      data.Store
 	openedDocs data.DocumentStore
 	Debouncers *ServerDebouncers
+	Config     Config
 }
 
 func NewHandler() (hanlder *LangHandler) {
 	return &LangHandler{
 		store:      data.NewStore(),
 		openedDocs: data.NewDocumentStore(),
+		Config:     NewConfig(),
 		Debouncers: &ServerDebouncers{
 			DocumentDidChange:   utils.NewSylDebouncer(300 * time.Millisecond),
 			SemantickTokensFull: utils.NewSylDebouncer(400 * time.Millisecond),
@@ -166,6 +177,8 @@ func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 		return h.handleTextDocumentCompletion(ctx, conn, req)
 	case "textDocument/references":
 		return h.handleTextDocumentReferences(ctx, conn, req)
+	case "textDocument/definition":
+		return h.handleTextDocumentDefinition(ctx, conn, req)
 	case "textDocument/semanticTokens/full":
 		return h.handleTextDocumentSemanticTokensFull(ctx, conn, req)
 	}

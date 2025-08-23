@@ -7,10 +7,11 @@ someting text before [[README]] afte
 
 ## Objective
 
-[[README#Entities]]
-[[Example#Objective]]
+[[Example]]
 
 Cool
+
+[[README]]
 
 - [[coolfile]]
 - Cool [[superfile#ks]]

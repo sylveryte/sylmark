@@ -61,3 +61,11 @@ func GetTag(node *tree_sitter.Node, content string) Tag {
 
 	return Tag(t)
 }
+
+func (s *Store) GetTagHover(tag Tag) string {
+	if s == nil {
+		return ""
+	}
+	totalRefs := s.GetTagRefs(tag)
+	return fmt.Sprintf("%d refs of %s", totalRefs, tag)
+}

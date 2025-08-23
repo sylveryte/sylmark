@@ -1,3 +1,7 @@
+codeberg.org/sylveryte/tree-sitter-sylmark v0.1.41 h1:T1/JzjhToh5ZdYztJxSYq1eP9dzIJASlgIbYFagEs1c=
+codeberg.org/sylveryte/tree-sitter-sylmark v0.1.41/go.mod h1:zwqAToiij7GLfmAw+8VWUsT/yacHMExffnZWgykRjrA=
+codeberg.org/sylveryte/tree-sitter-sylmark v0.1.42 h1:ICRRFY/mjuIQvseU2Hu7D79tOJ6CnESItAA32eqSjjE=
+codeberg.org/sylveryte/tree-sitter-sylmark v0.1.42/go.mod h1:zwqAToiij7GLfmAw+8VWUsT/yacHMExffnZWgykRjrA=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gorilla/websocket v1.4.1 h1:q7AeDBpnBk8AogcD4DSag/Ukw/KV+YhzLj2bP5HvKCM=

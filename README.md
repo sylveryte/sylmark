@@ -12,25 +12,42 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 
 ## Work Items
 
+### v0.1 (current)
+
 - [x] Minimal Treesitter parser
-  - [tree_sitter_sylmark](https://github.com/sylveryte/tree-sitter-sylmark)
+  - [tree_sitter_sylmark](https://codeberg.org/sylveryte/tree-sitter-sylmark)
 - [x] Hover
   - [x] Tag
-  - [ ] Wikilinks
+  - [x] Wikilinks
+  - [ ] Headings (backlinks)
 - [/] Completions
   - [x] Hash Tags
-  - [/] Wikilinks File
-  - [/] Wikilinks with sub headings
+  - [x] Wikilinks File
+  - [x] Wikilinks with sub headings
   - [ ] Wikilinks within file
-  - [ ] ?Links Any File
-- [ ] Go To Definitions
-  - [ ] Wikilinks File
-  - [ ] Wikilinks with sub headings
+- [/] Go To Definitions
+  - [x] Wikilinks File
+  - [x] Wikilinks with sub headings
   - [ ] Wikilinks within file
-  - [ ] ?Links Any File
 - [/] Go to references
   - [x] Tags
   - [ ] Wikilinks
+  - [ ] Headings
+
+## Roadmap
+
+### v0.2 (next)
+
+- [ ] Sub tag support
+- [ ] Dim nonexisting wikilinks
+- [ ] Rename heading across workspace
+- [ ] Code actions
+- [ ] Diagnostics
+- [ ] Links Any File
+
+### v0.3
+
+- [ ] Sylgraph - Graph view of all nodes
 
 ## Structure
 

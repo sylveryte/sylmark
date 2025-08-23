@@ -1,6 +1,7 @@
 package data
 
 import (
+	"log/slog"
 	"strings"
 	"sylmark/lsp"
 
@@ -33,19 +34,44 @@ func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bo
 	return
 }
 
-func getWikilinkLink(node *tree_sitter.Node, content string) (link string, ok bool) {
+// handles node kind wikilink, wiktarget, heading, title
+func GetWikilinkTarget(node *tree_sitter.Node, content string, uri lsp.DocumentURI) (target GTarget, ok bool) {
 
-	link, ok = lsp.FieldText(node, "target", content)
-
-	if !ok {
-		return
+	var link string
+	if node.Kind() == "wikilink" {
+		link, ok = lsp.FieldText(node, "target", content)
+		if !ok {
+			return
+		}
+	} else if node.Kind() == "heading" || node.Kind() == "title" {
+		var heading string
+		if node.Kind() == "heading" {
+			heading, ok = getHeadingTitle(node, content)
+			if !ok {
+				slog.Error("Could not extract heading")
+				return "", false
+			}
+		} else {
+			heading = lsp.GetNodeContent(*node, content)
+			heading = strings.TrimSpace(heading) // important
+		}
+		gtarget, ok := getGTarget(heading, uri)
+		if !ok {
+			slog.Error("Could not form gtarget")
+			return "", false
+		}
+		link = string(gtarget)
+	} else if node.Parent().Kind() == "wikilink" {
+		link = lsp.GetNodeContent(*node, content)
+	} else {
+		return "", false
 	}
 
 	if strings.Contains(link, "|") {
 		link = strings.Split(link, "|")[0]
 	}
 
-	link = strings.TrimSpace(link)
+	target = GTarget(strings.TrimSpace(link))
 
-	return
+	return target, true
 }

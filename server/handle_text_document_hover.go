@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
@@ -29,19 +28,40 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 		return nil, nil
 	}
 
+	r := lsp.GetRange(node)
+	var content string
 	switch node.Kind() {
 	case "tag":
 		{
-			r := lsp.GetRange(node)
 			tag := data.GetTag(node, string(doc))
-			totalRefs := h.store.GetTagRefs(tag)
-			return lsp.Hover{
-				Contents: fmt.Sprintf("%d refs of %s", totalRefs, tag),
-				Range:    &r,
-			}, nil
+			content = h.store.GetTagHover(tag)
+		}
+	case "heading", "title":
+		{
+			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
+			if ok {
+				content = h.store.GetGTargetHeadingHover(target)
+			} else {
+				slog.Warn("Wikilink definition not found" + string(target))
+			}
+		}
+	case "wikilink", "wikitarget":
+		{
+			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
+			if ok {
+				content = h.store.GetGTargetWikilinkHover(target, h.Config.ExcerptLength)
+			} else {
+				slog.Warn("Wikilink definition not found" + string(target))
+			}
 		}
 	}
 
+	if len(content) > 0 {
+		return lsp.Hover{
+			Contents: content,
+			Range:    &r,
+		}, nil
+	}
 	slog.Info("Node hovered is of kind = " + node.Kind())
 
 	return nil, nil
