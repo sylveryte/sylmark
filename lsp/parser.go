@@ -7,6 +7,7 @@ import (
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
+type ParseFunction func(content string, oldTree *tree_sitter.Tree) *tree_sitter.Tree
 
 func printTsTree(node tree_sitter.Node, depth int, cont string) {
 	indent := ""

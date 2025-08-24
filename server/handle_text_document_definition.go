@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
-	"sylmark/utils"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -26,7 +25,6 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 		return nil, nil
 	}
 
-	slog.Info("Store is " + utils.StringThis(h.store))
 	switch node.Kind() {
 	case "tag":
 		{

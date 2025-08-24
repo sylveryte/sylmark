@@ -8,6 +8,8 @@ import (
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
+type Tag string
+
 func (s *Store) GetTagRefs(tag Tag) int {
 
 	clocs, found := s.tags[tag]
@@ -27,7 +29,7 @@ func (s *Store) GetTagCompletions() []lsp.CompletionItem {
 	for t, v := range s.tags {
 		completions = append(completions, lsp.CompletionItem{
 			Label:         string(t),
-			Kind:          lsp.ReferenceCompletion,
+			Kind:          lsp.ClassCompletion,
 			Detail:        string(t),
 			Documentation: fmt.Sprintf("#%d refs", len(v)),
 		})
@@ -54,6 +56,35 @@ func (s *Store) AddTag(node *tree_sitter.Node, uri lsp.DocumentURI, content *str
 	return true
 }
 
+// returns ok
+func (s *Store) RemoveTag(node *tree_sitter.Node, uri lsp.DocumentURI, content *string) bool {
+	if s == nil {
+		return false
+	}
+
+	tag := GetTag(node, *content)
+	loc := uri.LocationOf(node)
+	tagLocs, found := s.tags[tag]
+	if found {
+		var newLocations []lsp.Location
+
+		for _, tagLoc := range tagLocs {
+			if tagLoc.URI == loc.URI && tagLoc.Range.Start == loc.Range.Start {
+				continue
+			}
+			newLocations = append(newLocations, tagLoc)
+		}
+
+		if len(newLocations) == 0 {
+			delete(s.tags, tag)
+		} else {
+			s.tags[tag] = newLocations
+		}
+	}
+
+	return true
+}
+
 func GetTag(node *tree_sitter.Node, content string) Tag {
 
 	t := lsp.GetNodeContent(*node, content)
@@ -67,5 +98,5 @@ func (s *Store) GetTagHover(tag Tag) string {
 		return ""
 	}
 	totalRefs := s.GetTagRefs(tag)
-	return fmt.Sprintf("%d refs of %s", totalRefs, tag)
+	return fmt.Sprintf("%d references of %s", totalRefs, tag)
 }

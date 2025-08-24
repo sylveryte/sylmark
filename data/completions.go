@@ -11,15 +11,13 @@ import (
 func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.CompletionItem, error) {
 	completions := []lsp.CompletionItem{}
 
-	doc, found := store.DocDataFromURI(params.TextDocument.URI)
+	doc, found := store.GetDoc(params.TextDocument.URI)
 	if !found {
-		slog.Info("not found" + string(params.TextDocument.URI))
+		slog.Error("not found" + string(params.TextDocument.URI))
 		return completions, fmt.Errorf("Not found")
 	}
 
 	line := doc.Content.GetLine(params.Position.Line)
-	slog.Info(fmt.Sprintf("%v==>", params.Position.Character) + "mila re==[" + line + "]")
-	// slog.Info("mila re==[" + line+"] ["+line[params.Position.Character:]+"]")
 
 	isTag := false
 	isWiki := false
@@ -27,7 +25,6 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 
 	before, after, found := utils.FindWord(params.Position.Character, line)
 	before = strings.TrimSpace(before)
-	// slog.Info(fmt.Sprintf("B-[%s] A-[%s] f-[%t]", before, after, found))
 	if before[0] == '#' {
 		isTag = true
 	} else if len(before) > 1 {
@@ -40,7 +37,6 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 			}
 		}
 	}
-	// slog.Info(fmt.Sprintf("isTag=%t isWiki=%t isWikiEnd=%t", isTag, isWiki, isWikiEnd))
 
 	// Tags
 	if isTag {

@@ -11,21 +11,19 @@ import (
 	"sylmark/utils"
 	"time"
 
-	"github.com/sourcegraph/jsonrpc2"
 	tree_sitter_sylmark "codeberg.org/sylveryte/tree-sitter-sylmark/bindings/go"
+	"github.com/sourcegraph/jsonrpc2"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type Config struct {
 	RootMarkers   *[]string `yaml:"root-markers" json:"rootMarkers"`
-	ExcerptLength int16
 }
 
 func NewConfig() Config {
 	rmakers := []string{".sylroot"}
 	return Config{
 		RootMarkers:   &rmakers,
-		ExcerptLength: 10,
 	}
 }
 
@@ -44,8 +42,8 @@ type LangHandler struct {
 
 func NewHandler() (hanlder *LangHandler) {
 	return &LangHandler{
-		store:      data.NewStore(),
-		Config:     NewConfig(),
+		store:  data.NewStore(),
+		Config: NewConfig(),
 		Debouncers: &ServerDebouncers{
 			DocumentDidChange:   utils.NewSylDebouncer(300 * time.Millisecond),
 			SemantickTokensFull: utils.NewSylDebouncer(400 * time.Millisecond),
@@ -76,53 +74,32 @@ func (h *LangHandler) loadAllClosedDocsData() {
 }
 
 func (h *LangHandler) loadDocData(mdDocPath string) {
+	// using directly ContentFromDocPath to skip caching in store
 	content := data.ContentFromDocPath(mdDocPath)
 	uri, err := data.UriFromPath(mdDocPath)
 	if err != nil {
 		slog.Error(err.Error())
 		return
 	}
-	tree := h.parse(content)
+	tree := h.parse(content, nil)
 	defer tree.Close()
 	h.store.LoadData(uri, content, tree.RootNode())
 }
 
 func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
-	tree := h.parse(content)
-	h.store.AddDoc(uri, data.Document(content), tree)
+	tree := h.parse(content, nil)
 	doc := data.Document(content)
 
-	h.store.AddDoc(uri, doc, tree)
+	docData := data.NewDocumentData(doc, tree)
+	h.store.AddUpdateDoc(uri, docData)
 }
+
 func (h *LangHandler) onDocClosed(uri lsp.DocumentURI) {
 	// remove data into openedDocs
-	_, found := h.store.RemoveDoc(uri)
-	if !found {
-		slog.Error("Document not in openedDocs")
-		return
-	}
 }
 
 func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocumentContentChangeEvent) {
-
-	// update data into openedDocs
-	updatedDocData, oldDocData, ok := h.store.UpdateDoc(uri, changes, h.parse)
-	if !ok {
-		slog.Info("Update doc failed.")
-		return
-	}
-
-	// update openedDocsStore
-	tempStoreOld := data.NewStore()
-	tempStoreOld.LoadData(uri, string(oldDocData.Content), oldDocData.Tree.RootNode())
-
-	tempStoreNew := data.NewStore()
-	tempStoreNew.LoadData(uri, string(updatedDocData.Content), updatedDocData.Tree.RootNode())
-
-	// sylopti
-	h.store.SubtractStore(&tempStoreOld)
-	h.store.MergeStore(&tempStoreNew)
-
+	h.store.SyncChangedDocument(uri, changes, h.parse)
 }
 
 func (h *LangHandler) SetupGrammars() {
@@ -131,12 +108,10 @@ func (h *LangHandler) SetupGrammars() {
 	parser.SetLanguage(language)
 
 	h.Parser = parser
-
-	slog.Info("Grammars are set")
 }
 
 func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position lsp.Position) (doc data.Document, node *tree_sitter.Node, ok bool) {
-	docData, ok := h.store.DocDataFromURI(uri)
+	docData, ok := h.store.GetDoc(uri)
 	if !ok {
 		slog.Error("Document missing" + string(uri))
 		return "", nil, false
@@ -150,8 +125,8 @@ func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position
 	return
 }
 
-func (h *LangHandler) parse(content string) *tree_sitter.Tree {
-	return h.Parser.Parse([]byte(content), nil)
+func (h *LangHandler) parse(content string, oldTree *tree_sitter.Tree) *tree_sitter.Tree {
+	return h.Parser.Parse([]byte(content), oldTree)
 }
 
 func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {

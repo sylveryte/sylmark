@@ -21,8 +21,6 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 		return nil, err
 	}
 
-	slog.Info("Handling hover uri is = " + string(params.TextDocument.URI))
-
 	doc, node, ok := h.DocAndNodeFromURIAndPosition(params.TextDocument.URI, params.Position)
 	if !ok {
 		return nil, nil
@@ -30,6 +28,7 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 
 	r := lsp.GetRange(node)
 	var content string
+	slog.Info("node kind is "+node.Kind())
 	switch node.Kind() {
 	case "tag":
 		{
@@ -49,7 +48,7 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 		{
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
 			if ok {
-				content = h.store.GetGTargetWikilinkHover(target, h.Config.ExcerptLength)
+				content = h.store.GetGTargetWikilinkHover(target)
 			} else {
 				slog.Warn("Wikilink definition not found" + string(target))
 			}
@@ -62,7 +61,6 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 			Range:    &r,
 		}, nil
 	}
-	slog.Info("Node hovered is of kind = " + node.Kind())
 
 	return nil, nil
 }

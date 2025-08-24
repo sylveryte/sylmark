@@ -19,7 +19,7 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - [x] Hover
   - [x] Tag
   - [x] Wikilinks
-  - [ ] Headings (backlinks)
+  - [x] Headings (references)
 - [/] Completions
   - [x] Hash Tags
   - [x] Wikilinks File
@@ -29,10 +29,14 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Wikilinks File
   - [x] Wikilinks with sub headings
   - [ ] Wikilinks within file
-- [/] Go to references
+- [x] Go to references
   - [x] Tags
-  - [ ] Wikilinks
-  - [ ] Headings
+  - [x] Wikilinks
+  - [x] Headings
+
+#### Bug
+
+- [ ] LSP crashing on O in iron man file
 
 ## Roadmap
 

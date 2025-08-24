@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
@@ -41,7 +40,6 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 				slog.Warn("No valid gtarget")
 			}
 			locs := h.store.GetGTargetReferences(target)
-			slog.Info(fmt.Sprintf("Got %d", len(locs)))
 			if len(locs) > 0 {
 				return locs, nil
 			}

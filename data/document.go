@@ -2,6 +2,7 @@ package data
 
 import (
 	"bytes"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
@@ -17,16 +18,11 @@ type DocumentData struct {
 	Content Document
 }
 
-func newDocumentData(doc Document, tree *tree_sitter.Tree) *DocumentData {
+func NewDocumentData(doc Document, tree *tree_sitter.Tree) *DocumentData {
 	return &DocumentData{
 		Content: doc,
 		Tree:    tree,
 	}
-}
-
-
-func SplitLines(content string) {
-
 }
 
 // sylopti
@@ -39,7 +35,6 @@ func (doc *Document) GetLine(lineNumber int) string {
 	return ""
 }
 
-
 func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {
 	parsedUrl, err := url.Parse(string(uri))
 	if err != nil {
@@ -48,9 +43,6 @@ func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {
 
 	filePath := parsedUrl.Path
 	dir := filePath
-	if err != nil {
-		return "", err
-	}
 	info, err := os.Stat(filePath)
 	if err != nil {
 		return "", err
@@ -84,12 +76,13 @@ func UriFromPath(path string) (lsp.DocumentURI, error) {
 		Scheme: "file",
 		Path:   uriPath,
 	}
+	// remove %20
+	unscapedUri, err := url.QueryUnescape(u.String())
 
-	return lsp.DocumentURI(u.String()), nil
+	return lsp.DocumentURI(unscapedUri), err
 }
 
 func ContentFromDocPath(mdDocPath string) string {
-	slog.Info("reading file " + mdDocPath)
 	contentByte, err := os.ReadFile(mdDocPath)
 	if err != nil {
 		slog.Error("Failed to read file " + mdDocPath + err.Error())
@@ -97,14 +90,20 @@ func ContentFromDocPath(mdDocPath string) string {
 	return string(contentByte)
 }
 
-func GetExcerpt(content string, rng lsp.Range, excerptLength int16) string {
-	lines := bytes.Split([]byte(content), []byte("\n"))
-	startLine := rng.Start.Line
-	endLine := startLine + int(excerptLength)
+func (store *Store) GetExcerpt(loc lsp.Location) string {
+	docData, ok := store.GetDoc(loc.URI)
+	if !ok {
+		slog.Error("Failed to get doc for GetExcerpt" + string(loc.URI))
+		return ""
+	}
+
+	lines := bytes.Split([]byte(docData.Content), []byte("\n"))
+	startLine := loc.Range.Start.Line
+	endLine := startLine + int(store.ExcerptLength)
 
 	if endLine >= len(lines) {
 		endLine = len(lines) - 1
 	}
 	exLines := lines[startLine:endLine]
-	return string(bytes.Join(exLines, []byte("\n")))
+	return fmt.Sprintf("\n`Preview`\n\n%s\n`...`\n", string(bytes.Join(exLines, []byte("\n"))))
 }

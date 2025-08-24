@@ -1,8 +1,6 @@
 package data
 
 import (
-	"fmt"
-	"log/slog"
 	"sylmark/lsp"
 )
 
@@ -41,27 +39,70 @@ func (glinkStore *GLinkStore) AddRef(target GTarget, loc lsp.Location) bool {
 	return true
 }
 
-
-func (glinkStore *GLinkStore) AddDef(target GTarget, uri lsp.DocumentURI, rng lsp.Range) bool {
+// returns ok
+func (glinkStore *GLinkStore) RemoveRef(target GTarget, loc lsp.Location) bool {
 	if glinkStore == nil {
 		return false
 	}
 	gs := *glinkStore
 
-	slog.Info(fmt.Sprintf("addingdef GTarget=[%s] and uri=[%s]", target, uri))
+	glink, found := gs[target]
+
+	if !found {
+		return true
+	}
+	var newRefs []lsp.Location
+	for _, ref := range glink.refs {
+		if ref.URI == loc.URI && ref.Range.Start == loc.Range.Start {
+			continue
+		}
+		newRefs = append(newRefs, ref)
+	}
+
+	glink.refs = newRefs
+	gs[target] = glink
+	return true
+}
+
+func (glinkStore *GLinkStore) AddDef(target GTarget, loc lsp.Location) bool {
+	if glinkStore == nil {
+		return false
+	}
+	gs := *glinkStore
 
 	glink, found := gs[target]
 
 	if !found {
 		glink = newGlink()
 	}
-	glink.defs = append(glink.defs,
-		lsp.Location{
-			URI:   uri,
-			Range: rng,
-		})
+	glink.defs = append(glink.defs, loc)
 	gs[target] = glink
 
+	return true
+}
+
+// returns ok
+func (glinkStore *GLinkStore) RemoveDef(target GTarget, loc lsp.Location) bool {
+	if glinkStore == nil {
+		return false
+	}
+	gs := *glinkStore
+
+	glink, found := gs[target]
+
+	if !found {
+		return true
+	}
+	var newDefs []lsp.Location
+	for _, def := range glink.defs {
+		if def.URI == loc.URI && def.Range.Start == loc.Range.Start {
+			continue
+		}
+		newDefs = append(newDefs, def)
+	}
+
+	glink.defs = newDefs
+	gs[target] = glink
 	return true
 }
 
@@ -87,15 +128,22 @@ func (glinkStore *GLinkStore) GetDefs(target GTarget) (defs []lsp.Location, foun
 	return glink.defs, found && len(glink.defs) > 0
 }
 
-func (glinkStore *GLinkStore) GetTargets() []GTarget {
-	targets := []GTarget{}
+func (glinkStore *GLinkStore) GetTargets() []GTargetAndLoc {
+	targets := []GTargetAndLoc{}
 	if glinkStore == nil {
 		return targets
 	}
 	gs := *glinkStore
 
-	for k := range gs {
-		targets = append(targets, k)
+	for k, v := range gs {
+		var def *lsp.Location
+		if len(v.defs) > 0 {
+			def = &v.defs[0]
+		}
+		targets = append(targets, GTargetAndLoc{
+			target: k,
+			loc:    def,
+		})
 	}
 
 	return targets

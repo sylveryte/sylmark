@@ -23,9 +23,9 @@ func (store *Store) GetSemanticTokens(uri lsp.DocumentURI) lsp.SemantiTokens {
 	intTokens := []uint{}
 
 	// get tokens and convert them to intTokens
-	docData, found := store.DocDataFromURI(uri)
+	docData, found := store.GetDoc(uri)
 	if !found {
-		slog.Info("Shocking doc not found for SemantiTokens" + string(uri))
+		slog.Error("Shocking doc not found for SemantiTokens" + string(uri))
 		return lsp.SemantiTokens{
 			Data: []uint{},
 		}
