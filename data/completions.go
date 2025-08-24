@@ -8,10 +8,10 @@ import (
 	"sylmark/utils"
 )
 
-func (store *Store) GetCompletions(params lsp.CompletionParams, openedDocs DocumentStore) ([]lsp.CompletionItem, error) {
+func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.CompletionItem, error) {
 	completions := []lsp.CompletionItem{}
 
-	doc, found := openedDocs.DocDataFromURI(params.TextDocument.URI)
+	doc, found := store.DocDataFromURI(params.TextDocument.URI)
 	if !found {
 		slog.Info("not found" + string(params.TextDocument.URI))
 		return completions, fmt.Errorf("Not found")

@@ -19,6 +19,6 @@ func (h *LangHandler) handleTextDocumentCompletion(_ context.Context, _ *jsonrpc
 		return nil, err
 	}
 
-	return h.store.GetCompletions(params, h.openedDocs)
+	return h.store.GetCompletions(params)
 
 }

@@ -38,7 +38,6 @@ type LangHandler struct {
 	Parser     *tree_sitter.Parser
 	rootPath   string
 	store      data.Store
-	openedDocs data.DocumentStore
 	Debouncers *ServerDebouncers
 	Config     Config
 }
@@ -46,7 +45,6 @@ type LangHandler struct {
 func NewHandler() (hanlder *LangHandler) {
 	return &LangHandler{
 		store:      data.NewStore(),
-		openedDocs: data.NewDocumentStore(),
 		Config:     NewConfig(),
 		Debouncers: &ServerDebouncers{
 			DocumentDidChange:   utils.NewSylDebouncer(300 * time.Millisecond),
@@ -91,14 +89,14 @@ func (h *LangHandler) loadDocData(mdDocPath string) {
 
 func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
 	tree := h.parse(content)
-	h.openedDocs.AddDoc(uri, data.Document(content), tree)
+	h.store.AddDoc(uri, data.Document(content), tree)
 	doc := data.Document(content)
 
-	h.openedDocs.AddDoc(uri, doc, tree)
+	h.store.AddDoc(uri, doc, tree)
 }
 func (h *LangHandler) onDocClosed(uri lsp.DocumentURI) {
 	// remove data into openedDocs
-	_, found := h.openedDocs.RemoveDoc(uri)
+	_, found := h.store.RemoveDoc(uri)
 	if !found {
 		slog.Error("Document not in openedDocs")
 		return
@@ -108,7 +106,7 @@ func (h *LangHandler) onDocClosed(uri lsp.DocumentURI) {
 func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocumentContentChangeEvent) {
 
 	// update data into openedDocs
-	updatedDocData, oldDocData, ok := h.openedDocs.UpdateDoc(uri, changes, h.parse)
+	updatedDocData, oldDocData, ok := h.store.UpdateDoc(uri, changes, h.parse)
 	if !ok {
 		slog.Info("Update doc failed.")
 		return
@@ -121,7 +119,7 @@ func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocument
 	tempStoreNew := data.NewStore()
 	tempStoreNew.LoadData(uri, string(updatedDocData.Content), updatedDocData.Tree.RootNode())
 
-	// syltodo TODO optimze this flow it
+	// sylopti
 	h.store.SubtractStore(&tempStoreOld)
 	h.store.MergeStore(&tempStoreNew)
 
@@ -138,7 +136,7 @@ func (h *LangHandler) SetupGrammars() {
 }
 
 func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position lsp.Position) (doc data.Document, node *tree_sitter.Node, ok bool) {
-	docData, ok := h.openedDocs.DocDataFromURI(uri)
+	docData, ok := h.store.DocDataFromURI(uri)
 	if !ok {
 		slog.Error("Document missing" + string(uri))
 		return "", nil, false

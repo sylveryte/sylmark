@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"sylmark/data"
 	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
@@ -20,7 +19,7 @@ func (h *LangHandler) handleTextDocumentSemanticTokensFull(_ context.Context, _ 
 		return nil, err
 	}
 
-	tokens := data.GetSemanticTokens(h.openedDocs, params.TextDocument.URI)
+	tokens := h.store.GetSemanticTokens(params.TextDocument.URI)
 
 	return tokens, nil
 }

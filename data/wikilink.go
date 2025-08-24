@@ -107,13 +107,14 @@ func getWikiHoverExcerpt(loc lsp.Location, excerptLength int16) string {
 	return GetExcerpt(cont, loc.Range, excerptLength)
 }
 
-func (s *Store) GetWikiHoverReferences(target GTarget) []lsp.Location {
-	// glinks, _, gfound := s.gLinkStore.GetGLinks(target)
-	// if !gfound {
-	// 	return "No references found."
-	// }
-	// return ""
-}
+// simply gives wiki links [[gtarget]] by \n
+// func (s *Store) GetMdReferences(refs []lsp.Location) string {
+// 	var content string
+//
+// 	for _, loc := range refs {
+// 		lsp.GetNodeContent(loc.) // dont' have startByte endByte
+// 	}
+// }
 
 func (s *Store) GetGTargetHeadingHover(target GTarget) string {
 	// var totalRefs int
@@ -126,25 +127,42 @@ func (s *Store) GetGTargetHeadingHover(target GTarget) string {
 	//
 	// content := fmt.Sprintf("%d references found", totalRefs)
 	// return content
+	return ""
 }
 
 func (s *Store) GetGTargetWikilinkHover(target GTarget, excerptLength int16) string {
-	glinks, gcount, gfound := s.gLinkStore.GetGLinks(target)
-	if !gfound {
-		return "No definition found."
-	}
+	defs, found := s.gLinkStore.GetDefs(target)
 	content := ""
+	if !found {
+		content = "No definition found."
+	} else {
+		if len(defs) == 1 {
+			loc := defs[0]
+			excerpt := getWikiHoverExcerpt(loc, excerptLength)
+			content = fmt.Sprintf("%s\n---\n%s", content, excerpt)
+			return content
+		}
 
-	if gcount > 1 {
-		content = fmt.Sprintf("%d definitions found", gcount)
+		if len(defs) > 1 {
+			content = fmt.Sprintf("%d definitions found\n---", len(defs))
+		}
+
+		for _, loc := range defs {
+			excerpt := getWikiHoverExcerpt(loc, excerptLength)
+			content = content + fmt.Sprintf("\n%s\n---", excerpt)
+		}
 	}
 
-	glinks(func(g glink) bool {
-		loc := g.def
-		excerpt := getWikiHoverExcerpt(loc, excerptLength)
-		content = fmt.Sprintf("%s\n---\n%s", content, excerpt)
-		return true
-	})
+	refs, found := s.gLinkStore.GetRefs(target)
+	if found {
+		content = content + fmt.Sprintf("%d references found", len(refs))
+	}
 
 	return content
+}
+
+func (s *Store) GetGTargetReferences(target GTarget) []lsp.Location {
+	slog.Info("getting target refs for "+string(target))
+	refs, _ := s.gLinkStore.GetRefs(target)
+	return refs
 }

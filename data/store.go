@@ -10,12 +10,14 @@ import (
 type Store struct {
 	tags       map[Tag][]lsp.Location
 	gLinkStore GLinkStore
+	DocStore   DocumentStore
 }
 
 func NewStore() Store {
 	return Store{
 		tags:       map[Tag][]lsp.Location{},
 		gLinkStore: NewGlinkStore(),
+		DocStore:   NewDocumentStore(),
 	}
 }
 
@@ -30,10 +32,11 @@ func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree
 		switch n.Kind() {
 		case "wikilink":
 			{
-				GetWikilinkTarget(n, content, uri)
-				// if ok {
-				// 	slog.Info("got wikilink " + link)
-				// }
+				target, ok := GetWikilinkTarget(n, content, uri)
+				if ok {
+					loc := uri.LocationOf(n)
+					store.gLinkStore.AddRef(target, loc)
+				}
 			}
 		case "heading":
 			{
@@ -64,7 +67,6 @@ func (store *Store) SubtractStore(tempStore *Store) {
 				for _, loc := range sv {
 					if loc.URI != v[0].URI {
 						newSv = append(newSv, loc)
-					} else {
 					}
 				}
 				if len(newSv) == 0 {

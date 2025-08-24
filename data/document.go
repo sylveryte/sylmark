@@ -2,7 +2,6 @@ package data
 
 import (
 	"bytes"
-	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
@@ -25,17 +24,12 @@ func newDocumentData(doc Document, tree *tree_sitter.Tree) *DocumentData {
 	}
 }
 
-type DocumentStore map[lsp.DocumentURI]DocumentData
-
-func NewDocumentStore() DocumentStore {
-	return map[lsp.DocumentURI]DocumentData{}
-}
 
 func SplitLines(content string) {
 
 }
 
-// syltodo TODO optimize it
+// sylopti
 func (doc *Document) GetLine(lineNumber int) string {
 	for i, v := range bytes.Split([]byte(*doc), []byte("\n")) {
 		if i == lineNumber {
@@ -45,70 +39,6 @@ func (doc *Document) GetLine(lineNumber int) string {
 	return ""
 }
 
-func (store *DocumentStore) RemoveDoc(uri lsp.DocumentURI) (docData DocumentData, found bool) {
-	if store == nil {
-		slog.Error("DocumentStore is empty")
-		return DocumentData{}, false
-	}
-	s := *store
-	docData, found = s[uri]
-	if found {
-		delete(s, uri)
-	}
-	return docData, found
-}
-
-// returns ok
-func (store *DocumentStore) AddDoc(uri lsp.DocumentURI, doc Document, tree *tree_sitter.Tree) bool {
-	if store == nil {
-		slog.Error("DocumentStore not defined")
-		return false
-	}
-	s := *store
-
-	s[uri] = *newDocumentData(doc, tree)
-	return true
-}
-
-func (store *DocumentStore) UpdateDoc(uri lsp.DocumentURI, change lsp.TextDocumentContentChangeEvent, parse func(content string) *tree_sitter.Tree) (newDocData DocumentData, oldDocData DocumentData, ok bool) {
-	if store == nil {
-		slog.Error("DocumentStore not defined")
-		return DocumentData{}, DocumentData{}, false
-	}
-	s := *store
-
-	if change.RangeLength == 0 {
-		doc := Document(change.Text)
-		tree := parse(change.Text)
-		oldDocData := s[uri]
-		newDocData := *newDocumentData(doc, tree)
-		s[uri] = newDocData
-		return newDocData, oldDocData, true
-	} else {
-		// syltodo TODO 👷
-		slog.Error("Need to handle partial change text")
-		slog.Info("Contents " + change.Text)
-		slog.Info(fmt.Sprintf("range length %d", change.RangeLength))
-		slog.Info(fmt.Sprintf(
-			"range start %d end %d",
-			change.Range.Start.Line,
-			change.Range.End.Line,
-		))
-
-		return DocumentData{}, DocumentData{}, false
-	}
-
-}
-
-func (store *DocumentStore) DocDataFromURI(uri lsp.DocumentURI) (docData DocumentData, found bool) {
-	if store == nil {
-		return DocumentData{}, false
-	}
-	s := *store
-
-	docData, found = s[uri]
-	return
-}
 
 func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {
 	parsedUrl, err := url.Parse(string(uri))

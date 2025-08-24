@@ -19,11 +19,11 @@ func getSemanticToken(node *tree_sitter.Node, tokenTypeIndex uint, tokenModifier
 	}
 }
 
-func  GetSemanticTokens(openedDocs DocumentStore, uri lsp.DocumentURI) lsp.SemantiTokens {
+func (store *Store) GetSemanticTokens(uri lsp.DocumentURI) lsp.SemantiTokens {
 	intTokens := []uint{}
 
 	// get tokens and convert them to intTokens
-	docData, found := openedDocs[uri]
+	docData, found := store.DocDataFromURI(uri)
 	if !found {
 		slog.Info("Shocking doc not found for SemantiTokens" + string(uri))
 		return lsp.SemantiTokens{
