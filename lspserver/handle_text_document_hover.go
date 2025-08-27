@@ -1,11 +1,11 @@
-package server
+package lspserver
 
 import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"sylmark/data"
-	"sylmark/lsp"
+	"sylmark-server/data"
+	"sylmark-server/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -20,15 +20,16 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
+	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
-	doc, node, ok := h.DocAndNodeFromURIAndPosition(params.TextDocument.URI, params.Position)
+	doc, node, ok := h.DocAndNodeFromURIAndPosition(params.TextDocument.URI, params.Position, h.parse)
 	if !ok {
 		return nil, nil
 	}
 
 	r := lsp.GetRange(node)
 	var content string
-	slog.Info("node kind is "+node.Kind())
+	slog.Info("node kind is " + node.Kind())
 	switch node.Kind() {
 	case "tag":
 		{

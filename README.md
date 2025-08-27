@@ -34,10 +34,6 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Wikilinks
   - [x] Headings
 
-#### Bug
-
-- [ ] LSP crashing on O in iron man file
-
 ## Roadmap
 
 ### v0.2 (next)

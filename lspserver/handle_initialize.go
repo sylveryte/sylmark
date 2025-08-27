@@ -1,11 +1,11 @@
-package server
+package lspserver
 
 import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"sylmark/data"
-	"sylmark/lsp"
+	"sylmark-server/data"
+	"sylmark-server/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )

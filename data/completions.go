@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sylmark/lsp"
-	"sylmark/utils"
+	"sylmark-server/lsp"
+	"sylmark-server/utils"
 )
 
 func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.CompletionItem, error) {
@@ -23,9 +23,11 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 	isWiki := false
 	isWikiEnd := true
 
+	// sylopti can we improve if say [[SOme space link starting from here#]]
+	// this case where space is not considrered by below code
 	before, after, found := utils.FindWord(params.Position.Character, line)
 	before = strings.TrimSpace(before)
-	if before[0] == '#' {
+	if len(before) > 0 && before[0] == '#' {
 		isTag = true
 	} else if len(before) > 1 {
 		if before[0] == '[' && before[1] == '[' {

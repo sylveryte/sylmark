@@ -1,9 +1,10 @@
-package server
+package lspserver
 
 import (
 	"context"
 	"encoding/json"
-	"sylmark/lsp"
+	"sylmark-server/data"
+	"sylmark-server/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -19,6 +20,7 @@ func (h *LangHandler) handleTextDocumentDidClose(_ context.Context, _ *jsonrpc2.
 		return nil, err
 	}
 
+	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 	h.onDocClosed(params.TextDocument.URI)
 
 	return nil, nil

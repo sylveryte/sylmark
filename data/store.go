@@ -2,43 +2,34 @@ package data
 
 import (
 	"log/slog"
-	"net/url"
-	"sylmark/lsp"
+	"sylmark-server/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type Store struct {
-	tags       map[Tag][]lsp.Location
-	gLinkStore GLinkStore
-	DocStore   DocumentStore
+	tags          map[Tag][]lsp.Location
+	gLinkStore    GLinkStore
+	DocStore      DocumentStore
 	ExcerptLength int16
 }
 
 func NewStore() Store {
 	return Store{
-		tags:       map[Tag][]lsp.Location{},
-		gLinkStore: NewGlinkStore(),
-		DocStore:   NewDocumentStore(),
+		tags:          map[Tag][]lsp.Location{},
+		gLinkStore:    NewGlinkStore(),
+		DocStore:      NewDocumentStore(),
 		ExcerptLength: 10,
 	}
 }
 
 func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumentContentChangeEvent, parse lsp.ParseFunction) {
 
-	unscapedUri, err := url.QueryUnescape(string(uri))
-	if err == nil {
-		uri = lsp.DocumentURI(unscapedUri)
-	} else {
-		slog.Error("Failed to unscapedUri")
-		return
-	}
-
 	var updatedDocData, oldDocData DocumentData
 	// update data into openedDocs
 	if changes.RangeLength == 0 {
 		doc := Document(changes.Text)
-		staleDoc, ok := s.GetDoc(uri)
+		staleDoc, ok := s.GetDocMustTree(uri, parse)
 		oldDocData = staleDoc
 		if !ok {
 			slog.Error("Failed to get old file" + string(uri))

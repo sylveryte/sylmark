@@ -1,9 +1,10 @@
-package server
+package lspserver
 
 import (
 	"context"
 	"encoding/json"
-	"sylmark/lsp"
+	"sylmark-server/data"
+	"sylmark-server/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -18,6 +19,7 @@ func (h *LangHandler) handleTextDocumentDidOpen(_ context.Context, _ *jsonrpc2.C
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
+	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 	content := params.TextDocument.Text
 
 	h.onDocOpened(params.TextDocument.URI,content)

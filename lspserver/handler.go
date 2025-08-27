@@ -1,4 +1,4 @@
-package server
+package lspserver
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
-	"sylmark/data"
-	"sylmark/lsp"
-	"sylmark/utils"
+	"sylmark-server/data"
+	"sylmark-server/lsp"
+	"sylmark-server/utils"
 	"time"
 
 	tree_sitter_sylmark "codeberg.org/sylveryte/tree-sitter-sylmark/bindings/go"
@@ -17,13 +17,13 @@ import (
 )
 
 type Config struct {
-	RootMarkers   *[]string `yaml:"root-markers" json:"rootMarkers"`
+	RootMarkers *[]string `yaml:"root-markers" json:"rootMarkers"`
 }
 
 func NewConfig() Config {
 	rmakers := []string{".sylroot"}
 	return Config{
-		RootMarkers:   &rmakers,
+		RootMarkers: &rmakers,
 	}
 }
 
@@ -110,8 +110,8 @@ func (h *LangHandler) SetupGrammars() {
 	h.Parser = parser
 }
 
-func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position lsp.Position) (doc data.Document, node *tree_sitter.Node, ok bool) {
-	docData, ok := h.store.GetDoc(uri)
+func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position lsp.Position, parse lsp.ParseFunction) (doc data.Document, node *tree_sitter.Node, ok bool) {
+	docData, ok := h.store.GetDocMustTree(uri, parse)
 	if !ok {
 		slog.Error("Document missing" + string(uri))
 		return "", nil, false

@@ -2,7 +2,7 @@ package data
 
 import (
 	"log/slog"
-	"sylmark/lsp"
+	"sylmark-server/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
@@ -19,11 +19,11 @@ func getSemanticToken(node *tree_sitter.Node, tokenTypeIndex uint, tokenModifier
 	}
 }
 
-func (store *Store) GetSemanticTokens(uri lsp.DocumentURI) lsp.SemantiTokens {
+func (store *Store) GetSemanticTokens(uri lsp.DocumentURI, parse lsp.ParseFunction) lsp.SemantiTokens {
 	intTokens := []uint{}
 
 	// get tokens and convert them to intTokens
-	docData, found := store.GetDoc(uri)
+	docData, found := store.GetDocMustTree(uri, parse)
 	if !found {
 		slog.Error("Shocking doc not found for SemantiTokens" + string(uri))
 		return lsp.SemantiTokens{

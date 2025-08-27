@@ -2,7 +2,7 @@ package data
 
 import (
 	"log/slog"
-	"sylmark/lsp"
+	"sylmark-server/lsp"
 )
 
 type DocumentStore map[lsp.DocumentURI]DocumentData
@@ -34,6 +34,17 @@ func (store *Store) AddUpdateDoc(uri lsp.DocumentURI, docData *DocumentData) boo
 
 	s.DocStore[uri] = *docData
 	return true
+}
+func (store *Store) GetDocMustTree(uri lsp.DocumentURI, parse lsp.ParseFunction) (docData DocumentData, ok bool) {
+	docData, found := store.GetDoc(uri)
+	if found {
+		if docData.Tree == nil {
+			docData.Tree = parse(string(docData.Content), nil)
+			store.AddUpdateDoc(uri, &docData)
+		}
+		return docData, true
+	}
+	return docData, false
 }
 
 func (store *Store) GetDoc(uri lsp.DocumentURI) (docData DocumentData, ok bool) {

@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sylmark/lsp"
+	"sylmark-server/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
@@ -77,7 +77,14 @@ func UriFromPath(path string) (lsp.DocumentURI, error) {
 		Path:   uriPath,
 	}
 	// remove %20
-	unscapedUri, err := url.QueryUnescape(u.String())
+	cleanedURI, err := CleanUpURI(u.String())
+
+	return lsp.DocumentURI(cleanedURI), err
+}
+
+func CleanUpURI(uri string) (lsp.DocumentURI, error) {
+	// remove %20
+	unscapedUri, err := url.QueryUnescape(uri)
 
 	return lsp.DocumentURI(unscapedUri), err
 }

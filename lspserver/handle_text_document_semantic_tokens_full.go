@@ -1,9 +1,10 @@
-package server
+package lspserver
 
 import (
 	"context"
 	"encoding/json"
-	"sylmark/lsp"
+	"sylmark-server/data"
+	"sylmark-server/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -18,8 +19,9 @@ func (h *LangHandler) handleTextDocumentSemanticTokensFull(_ context.Context, _ 
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
+	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
-	tokens := h.store.GetSemanticTokens(params.TextDocument.URI)
+	tokens := h.store.GetSemanticTokens(params.TextDocument.URI, h.parse)
 
 	return tokens, nil
 }

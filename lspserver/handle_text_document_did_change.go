@@ -1,9 +1,10 @@
-package server
+package lspserver
 
 import (
 	"context"
 	"encoding/json"
-	"sylmark/lsp"
+	"sylmark-server/data"
+	"sylmark-server/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -21,10 +22,11 @@ func (h *LangHandler) handleTextDocumentDidChange(_ context.Context, _ *jsonrpc2
 	}
 	changes := params.ContentChanges
 
+	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
+
 	for _, c := range changes {
 		h.onDocChanged(params.TextDocument.URI, c)
 	}
-	// })
 
 	return nil, nil
 }

@@ -1,9 +1,10 @@
-package server
+package lspserver
 
 import (
 	"context"
 	"encoding/json"
-	"sylmark/lsp"
+	"sylmark-server/data"
+	"sylmark-server/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -18,6 +19,8 @@ func (h *LangHandler) handleTextDocumentCompletion(_ context.Context, _ *jsonrpc
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
+
+	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
 	return h.store.GetCompletions(params)
 
