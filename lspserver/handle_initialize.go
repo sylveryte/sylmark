@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"sylmark-server/data"
-	"sylmark-server/lsp"
-	"sylmark-server/server"
+	"sylmark/data"
+	"sylmark/lsp"
+	"sylmark/server"
 
 	"github.com/sourcegraph/jsonrpc2"
 )

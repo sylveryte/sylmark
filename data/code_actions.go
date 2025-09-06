@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
-	"sylmark-server/lsp"
+	"sylmark/lsp"
 )
 
 func (store *Store) GetCodeActions(uri lsp.DocumentURI, diagnostics []lsp.Diagnostic, rng lsp.Range, parse lsp.ParseFunction) (actions []lsp.CodeAction) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sylmark-server/lsp"
+	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )

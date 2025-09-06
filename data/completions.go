@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sylmark-server/lsp"
-	"sylmark-server/utils"
+	"sylmark/lsp"
+	"sylmark/utils"
 )
 
 func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.CompletionItem, error) {

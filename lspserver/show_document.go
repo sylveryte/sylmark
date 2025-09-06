@@ -3,7 +3,7 @@ package lspserver
 import (
 	"context"
 	"fmt"
-	"sylmark-server/lsp"
+	"sylmark/lsp"
 	"time"
 )
 

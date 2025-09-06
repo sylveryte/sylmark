@@ -3,8 +3,8 @@ package lspserver
 import (
 	"context"
 	"encoding/json"
-	"sylmark-server/data"
-	"sylmark-server/lsp"
+	"sylmark/data"
+	"sylmark/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )

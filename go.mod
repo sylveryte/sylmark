@@ -1,4 +1,4 @@
-module sylmark-server
+module sylmark
 
 go 1.23.6
 

@@ -3,8 +3,8 @@ package server
 import (
 	"log/slog"
 	"net/http"
-	"sylmark-server/data"
-	"sylmark-server/lsp"
+	"sylmark/data"
+	"sylmark/lsp"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sylmark-server/lsp"
+	"sylmark/lsp"
 	"time"
 )
 

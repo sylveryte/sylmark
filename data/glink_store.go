@@ -1,7 +1,7 @@
 package data
 
 import (
-	"sylmark-server/lsp"
+	"sylmark/lsp"
 )
 
 type Glink struct {

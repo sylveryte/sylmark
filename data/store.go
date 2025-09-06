@@ -3,7 +3,7 @@ package data
 import (
 	"fmt"
 	"log/slog"
-	"sylmark-server/lsp"
+	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )

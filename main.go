@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sylmark-server/lspserver"
+	"sylmark/lspserver"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -30,7 +30,7 @@ func main() {
 }
 
 func setLogger() *os.File {
-	logFilePath := filepath.Join("/tmp", "sylmark-server.log")
+	logFilePath := filepath.Join("/tmp", "sylmark.log")
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		panic("Failed to open log file: " + err.Error())

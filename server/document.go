@@ -3,7 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http"
-	"sylmark-server/data"
+	"sylmark/data"
 )
 
 type ShowDocumentParams struct {

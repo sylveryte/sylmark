@@ -2,8 +2,8 @@ package server
 
 import (
 	"net/http"
-	"sylmark-server/data"
-	"sylmark-server/lsp"
+	"sylmark/data"
+	"sylmark/lsp"
 )
 
 type Node struct {

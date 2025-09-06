@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"sylmark-server/data"
-	"sylmark-server/lsp"
+	"sylmark/data"
+	"sylmark/lsp"
 	"time"
 
 	"github.com/sourcegraph/jsonrpc2"

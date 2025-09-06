@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
-	"sylmark-server/data"
-	"sylmark-server/lsp"
-	"sylmark-server/utils"
+	"sylmark/data"
+	"sylmark/lsp"
+	"sylmark/utils"
 	"time"
 
 	tree_sitter_sylmark "codeberg.org/sylveryte/tree-sitter-sylmark/bindings/go"

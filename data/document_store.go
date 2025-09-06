@@ -2,7 +2,7 @@ package data
 
 import (
 	"log/slog"
-	"sylmark-server/lsp"
+	"sylmark/lsp"
 )
 
 type DocumentStore map[lsp.DocumentURI]DocumentData
