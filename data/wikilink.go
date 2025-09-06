@@ -15,7 +15,26 @@ type GTargetAndLoc struct {
 	loc    *lsp.Location
 }
 
-func getFileGTarget(uri lsp.DocumentURI) (gtarget string, ok bool) {
+func (t GTarget) SplitHeading() (gTarget GTarget, heading string, hasHeading bool) {
+	ts := string(t)
+	if strings.Contains(ts, "#") {
+		splits := strings.Split(ts, "#")
+		return GTarget(splits[0]), "# " + splits[1], true
+	}
+	return t, "", false
+}
+
+func (t GTarget) GetFileName() (fileName string, heading string, hasHeading bool) {
+	t.SplitHeading()
+	fileTarget, heading, hasHeading := t.SplitHeading()
+	if hasHeading {
+		return fileTarget.GetFileName()
+	} else {
+		return string(t) + ".md", "", false
+	}
+}
+
+func GetFileGTarget(uri lsp.DocumentURI) (gtarget string, ok bool) {
 
 	filename := uri.GetFileName()
 	splits := strings.Split(filename, ".md")
@@ -26,7 +45,7 @@ func getFileGTarget(uri lsp.DocumentURI) (gtarget string, ok bool) {
 }
 func getGTarget(heading string, uri lsp.DocumentURI) (gtarget GTarget, ok bool) {
 
-	fileGtTarget, ok := getFileGTarget(uri)
+	fileGtTarget, ok := GetFileGTarget(uri)
 	if ok {
 		if len(heading) > 0 {
 			return GTarget(fileGtTarget + "#" + heading), true
@@ -48,7 +67,7 @@ func (s *Store) AddFileGTarget(uri lsp.DocumentURI) bool {
 
 	location := uri.LocationOfFile()
 
-	return s.gLinkStore.AddDef(gtarget, location)
+	return s.GLinkStore.AddDef(gtarget, location)
 }
 
 // returns ok
@@ -70,7 +89,7 @@ func (s *Store) AddGTarget(node *tree_sitter.Node, uri lsp.DocumentURI, content 
 
 	location := uri.LocationOf(node)
 
-	return s.gLinkStore.AddDef(gtarget, location)
+	return s.GLinkStore.AddDef(gtarget, location)
 }
 
 // returns ok
@@ -92,13 +111,13 @@ func (s *Store) RemoveGTarget(node *tree_sitter.Node, uri lsp.DocumentURI, conte
 
 	location := uri.LocationOf(node)
 
-	return s.gLinkStore.RemoveDef(gtarget, location)
+	return s.GLinkStore.RemoveDef(gtarget, location)
 }
 
 func (s *Store) GetWikiCompletions(isWikiEnd bool, uri *lsp.DocumentURI) []lsp.CompletionItem {
 	completions := []lsp.CompletionItem{}
 
-	for _, t := range s.gLinkStore.GetTargets() {
+	for _, t := range s.GLinkStore.GetTargets() {
 		var link string
 		if isWikiEnd {
 			link = "[[" + string(t.target) + "]]"
@@ -120,14 +139,14 @@ func (s *Store) GetWikiCompletions(isWikiEnd bool, uri *lsp.DocumentURI) []lsp.C
 }
 
 func (s *Store) GetGTargetDefinition(target GTarget) []lsp.Location {
-	locs, _ := s.gLinkStore.GetDefs(target)
+	locs, _ := s.GLinkStore.GetDefs(target)
 	return locs
 }
 
 func (s *Store) GetGTargetHeadingHover(target GTarget) string {
 	var totalRefs int
 
-	refs, _ := s.gLinkStore.GetRefs(target)
+	refs, _ := s.GLinkStore.GetRefs(target)
 	totalRefs = len(refs)
 	content := fmt.Sprintf("%d references found", totalRefs)
 	return content
@@ -135,12 +154,12 @@ func (s *Store) GetGTargetHeadingHover(target GTarget) string {
 
 func (s *Store) GetGTargetWikilinkHover(target GTarget) string {
 	content := ""
-	refs, found := s.gLinkStore.GetRefs(target)
+	refs, found := s.GLinkStore.GetRefs(target)
 	if found {
 		content = fmt.Sprintf("%d references found\n", len(refs)) + content
 	}
 
-	defs, found := s.gLinkStore.GetDefs(target)
+	defs, found := s.GLinkStore.GetDefs(target)
 	if !found {
 		content = "No definition found."
 	} else {
@@ -157,21 +176,19 @@ func (s *Store) GetGTargetWikilinkHover(target GTarget) string {
 		}
 
 	}
-	slog.Info(fmt.Sprintf("Refmd con %d", len(refs)))
 	if len(refs) > 0 {
 		// references md
 		var refmd string
 		for _, loc := range refs {
 			refmd = fmt.Sprintf("%s1 %s\n", refmd, loc.URI.GetFileName())
 		}
-		slog.Info("Refmd is " + refmd)
-		content = content +"\n---\n" + refmd
+		content = content + "\n---\n" + refmd
 	}
 
 	return content
 }
 
 func (s *Store) GetGTargetReferences(target GTarget) []lsp.Location {
-	refs, _ := s.gLinkStore.GetRefs(target)
+	refs, _ := s.GLinkStore.GetRefs(target)
 	return refs
 }

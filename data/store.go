@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"log/slog"
 	"sylmark-server/lsp"
 
@@ -8,16 +9,16 @@ import (
 )
 
 type Store struct {
-	tags          map[Tag][]lsp.Location
-	gLinkStore    GLinkStore
+	Tags          map[Tag][]lsp.Location
+	GLinkStore    GLinkStore
 	DocStore      DocumentStore
 	ExcerptLength int16
 }
 
 func NewStore() Store {
 	return Store{
-		tags:          map[Tag][]lsp.Location{},
-		gLinkStore:    NewGlinkStore(),
+		Tags:          map[Tag][]lsp.Location{},
+		GLinkStore:    NewGlinkStore(),
 		DocStore:      NewDocumentStore(),
 		ExcerptLength: 10,
 	}
@@ -43,14 +44,14 @@ func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumen
 		// sylopti
 		// TextDocumentSync is set to TDSKFull so this case won't be there but in future let's implment partial for better perf
 		slog.Error("Need to handle partial change text")
-		return
-		// slog.Info("Contents " + change.Text)
-		// slog.Info(fmt.Sprintf("range length %d", change.RangeLength))
-		// slog.Info(fmt.Sprintf(
-		// 	"range start %d end %d",
-		// 	change.Range.Start.Line,
-		// 	change.Range.End.Line,
-		// ))
+		// return
+		slog.Info("Contents " + changes.Text)
+		slog.Info(fmt.Sprintf("range length %d", changes.RangeLength))
+		slog.Info(fmt.Sprintf(
+			"range start %d end %d",
+			changes.Range.Start.Line,
+			changes.Range.End.Line,
+		))
 	}
 
 	// UnloadData
@@ -68,7 +69,7 @@ func (store *Store) UnloadData(uri lsp.DocumentURI, content string, rootNode *tr
 				target, ok := GetWikilinkTarget(n, content, uri)
 				if ok {
 					loc := uri.LocationOf(n)
-					store.gLinkStore.RemoveRef(target, loc)
+					store.GLinkStore.RemoveRef(target, loc)
 				}
 			}
 		case "heading":
@@ -93,7 +94,7 @@ func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree
 				target, ok := GetWikilinkTarget(n, content, uri)
 				if ok {
 					loc := uri.LocationOf(n)
-					store.gLinkStore.AddRef(target, loc)
+					store.GLinkStore.AddRef(target, loc)
 				}
 			}
 		case "heading":

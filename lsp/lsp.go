@@ -37,6 +37,9 @@ type SemanticTokensLegend struct {
 	TokenTypes     []SemanticTokenType     `json:"tokenTypes"`
 	TokenModifiers []SemanticTokenModifier `json:"tokenModifiers"`
 }
+type ExecuteCommandOptions struct {
+	Commands []string `json:"commands"`
+}
 type SemanticTokensOptions struct {
 	Legend SemanticTokensLegend `json:"legend"`
 	Range  bool                 `json:"range"`
@@ -84,6 +87,10 @@ type WorkspaceFoldersServerCapabilities struct {
 type ServerCapabilitiesWorkspace struct {
 	WorkspaceFolders WorkspaceFoldersServerCapabilities `json:"workspaceFolders"`
 }
+type DiagnosticOptions struct {
+	InterFileDependencies bool `json:"interFileDependencies"`
+	WorkspaceDiagnostics  bool `json:"workspaceDiagnostics"`
+}
 
 type ServerCapabilities struct {
 	TextDocumentSync           TextDocumentSyncKind         `json:"textDocumentSync,omitempty"`
@@ -93,9 +100,11 @@ type ServerCapabilities struct {
 	ReferencesProvider         bool                         `json:"referencesProvider,omitempty"`
 	SemanticTokensProvider     SemanticTokensOptions        `json:"semanticTokensProvider"`
 	DocumentFormattingProvider bool                         `json:"documentFormattingProvider,omitempty"`
+	DiagnosticProvider         DiagnosticOptions            `json:"diagnosticProvider"`
 	RangeFormattingProvider    bool                         `json:"documentRangeFormattingProvider,omitempty"`
 	HoverProvider              bool                         `json:"hoverProvider,omitempty"`
 	CodeActionProvider         bool                         `json:"codeActionProvider,omitempty"`
+	ExecuteCommandProvider     ExecuteCommandOptions        `json:"executeCommandProvider"`
 	Workspace                  *ServerCapabilitiesWorkspace `json:"workspace,omitempty"`
 }
 
@@ -108,6 +117,20 @@ type TextDocumentItem struct {
 	LanguageID string      `json:"languageId"`
 	Version    int         `json:"version"`
 	Text       string      `json:"text"`
+}
+
+type ExecuteCommandParams struct {
+	Command   string   `json:"command"`
+	Arguments []string `json:"arguments"`
+}
+type ShowDocumentParams struct {
+	URI       DocumentURI `json:"uri"`
+	Selection Range       `json:"selection"`
+	TakeFocus bool        `json:"takeFocus"`
+}
+
+type ShowDocumentResult struct {
+	Success bool `json:"success"`
 }
 
 type DidOpenTextDocumentParams struct {
@@ -153,6 +176,23 @@ type TextDocumentPositionParams struct {
 	Position     Position               `json:"position"`
 }
 
+type DocumentDiagnosticParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+}
+type CodeActionContext struct {
+	Diagnostics []Diagnostic `json:"diagnostics"`
+}
+type CodeAction struct {
+	Title       string       `json:"title"`
+	Diagnostics []Diagnostic `json:"diagnostics"` // that is resolved by
+	Command     Command      `json:"command"`
+}
+type CodeActionParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Range        Range                  `json:"range"`
+	Context      CodeActionContext      `json:"context"`
+}
+
 type CompletionParams struct {
 	TextDocumentPositionParams
 	CompletionContext CompletionContext `json:"context"`
@@ -196,6 +236,24 @@ type Hover struct {
 	Range    *Range `json:"range"`
 }
 
+type DiagnosticResult struct {
+	Kind  DiagnosticReportKind `json:"kind"`
+	Items []Diagnostic         `json:"items"`
+}
+
+type Diagnostic struct {
+	Range    *Range             `json:"range"`
+	Severity DiagnosticSeverity `json:"severity"`
+	Tags     []DiagnosticTag    `json:"tags"`
+	Message  string             `json:"message"`
+}
+
+type DiagnosticReportKind string
+
+type DiagnosticSeverity int
+
+type DiagnosticTag int
+
 type CompletionItemKind int
 
 type CompletionItemTag int
@@ -208,10 +266,10 @@ type TextEdit struct {
 }
 
 type Command struct {
-	Title     string `json:"title" yaml:"title"`
-	Command   string `json:"command" yaml:"command"`
-	Arguments []any  `json:"arguments,omitempty" yaml:"arguments,omitempty"`
-	OS        string `json:"-" yaml:"os,omitempty"`
+	Title     string `json:"title"`
+	Command   string `json:"command"`
+	Arguments []any  `json:"arguments,omitempty"`
+	OS        string `json:"-"`
 }
 
 type CompletionItem struct {
@@ -232,6 +290,23 @@ type CompletionItem struct {
 	Command             *Command            `json:"command,omitempty"`
 	Data                any                 `json:"data,omitempty"`
 }
+
+const (
+	DiagnosticSeverityError       DiagnosticSeverity = 1
+	DiagnosticSeverityWarning     DiagnosticSeverity = 2
+	DiagnosticSeverityInformation DiagnosticSeverity = 3
+	DiagnosticSeverityHint        DiagnosticSeverity = 4
+)
+
+const (
+	DiagnosticTagUnnecessary DiagnosticTag = 1
+	DiagnosticTagDeprecated  DiagnosticTag = 2
+)
+
+const (
+	DiagnosticReportFull      DiagnosticReportKind = "full"
+	DiagnosticReportUnchanged DiagnosticReportKind = "unchanged"
+)
 
 const (
 	TextCompletion          CompletionItemKind = 1

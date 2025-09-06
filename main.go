@@ -22,7 +22,9 @@ func main() {
 	handler.SetupGrammars()
 	defer handler.Parser.Close()
 	jsonHandler := jsonrpc2.HandlerWithError(handler.Handle)
-	<- jsonrpc2.NewConn(ctx, stream, jsonHandler).DisconnectNotify()
+	conn := jsonrpc2.NewConn(ctx, stream, jsonHandler)
+	handler.Connection = conn
+	<-conn.DisconnectNotify()
 
 	slog.Info("Closing the lsp.")
 }

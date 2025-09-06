@@ -16,17 +16,6 @@ import (
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-type Config struct {
-	RootMarkers *[]string `yaml:"root-markers" json:"rootMarkers"`
-}
-
-func NewConfig() Config {
-	rmakers := []string{".sylroot"}
-	return Config{
-		RootMarkers: &rmakers,
-	}
-}
-
 type ServerDebouncers = struct {
 	DocumentDidChange   *utils.SylDebouncer
 	SemantickTokensFull *utils.SylDebouncer
@@ -34,16 +23,16 @@ type ServerDebouncers = struct {
 
 type LangHandler struct {
 	Parser     *tree_sitter.Parser
-	rootPath   string
-	store      data.Store
+	Store      data.Store
 	Debouncers *ServerDebouncers
-	Config     Config
+	Config     data.Config
+	Connection *jsonrpc2.Conn
 }
 
 func NewHandler() (hanlder *LangHandler) {
 	return &LangHandler{
-		store:  data.NewStore(),
-		Config: NewConfig(),
+		Store:  data.NewStore(),
+		Config: data.NewConfig(),
 		Debouncers: &ServerDebouncers{
 			DocumentDidChange:   utils.NewSylDebouncer(300 * time.Millisecond),
 			SemantickTokensFull: utils.NewSylDebouncer(400 * time.Millisecond),
@@ -52,17 +41,18 @@ func NewHandler() (hanlder *LangHandler) {
 }
 
 func (h *LangHandler) addRootPathAndLoad(dir string) {
-	h.rootPath = dir
+	h.Config.RootPath = dir
 	h.loadAllClosedDocsData()
+	h.Config.CreatDirsIfNeeded()
 }
 
 func (h *LangHandler) loadAllClosedDocsData() {
-	if h.rootPath == "" {
+	if h.Config.RootPath == "" {
 		slog.Error("h.rootPath is empty")
 		return
 	}
 
-	filepath.WalkDir(h.rootPath, func(path string, d fs.DirEntry, err error) error {
+	filepath.WalkDir(h.Config.RootPath, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() && strings.HasSuffix(path, ".git") {
 			return filepath.SkipDir
 		}
@@ -83,7 +73,13 @@ func (h *LangHandler) loadDocData(mdDocPath string) {
 	}
 	tree := h.parse(content, nil)
 	defer tree.Close()
-	h.store.LoadData(uri, content, tree.RootNode())
+	h.Store.LoadData(uri, content, tree.RootNode())
+}
+
+func (h *LangHandler) onDocCreated(uri lsp.DocumentURI, content string) {
+	h.onDocOpened(uri, content)
+	docPath, _ := data.PathFromURI(uri)
+	h.loadDocData(docPath)
 }
 
 func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
@@ -91,15 +87,11 @@ func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
 	doc := data.Document(content)
 
 	docData := data.NewDocumentData(doc, tree)
-	h.store.AddUpdateDoc(uri, docData)
-}
-
-func (h *LangHandler) onDocClosed(uri lsp.DocumentURI) {
-	// remove data into openedDocs
+	h.Store.AddUpdateDoc(uri, docData)
 }
 
 func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocumentContentChangeEvent) {
-	h.store.SyncChangedDocument(uri, changes, h.parse)
+	h.Store.SyncChangedDocument(uri, changes, h.parse)
 }
 
 func (h *LangHandler) SetupGrammars() {
@@ -111,7 +103,7 @@ func (h *LangHandler) SetupGrammars() {
 }
 
 func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position lsp.Position, parse lsp.ParseFunction) (doc data.Document, node *tree_sitter.Node, ok bool) {
-	docData, ok := h.store.GetDocMustTree(uri, parse)
+	docData, ok := h.Store.GetDocMustTree(uri, parse)
 	if !ok {
 		slog.Error("Document missing" + string(uri))
 		return "", nil, false
@@ -130,7 +122,7 @@ func (h *LangHandler) parse(content string, oldTree *tree_sitter.Tree) *tree_sit
 }
 
 func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
-	slog.Info("Received request with Handle method=> " + req.Method)
+	slog.Info("------------------------reqmethod=> " + req.Method)
 	switch req.Method {
 	case "initialize":
 		return h.handleInitialize(ctx, conn, req)
@@ -140,8 +132,8 @@ func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 		return h.handleShutdown(ctx, conn, req)
 	case "textDocument/didOpen":
 		return h.handleTextDocumentDidOpen(ctx, conn, req)
-	case "textDocument/didClose":
-		return h.handleTextDocumentDidClose(ctx, conn, req)
+	// case "textDocument/didClose":
+	// 	return h.handleTextDocumentDidClose(ctx, conn, req)
 	case "textDocument/didChange":
 		return h.handleTextDocumentDidChange(ctx, conn, req)
 	case "textDocument/hover":
@@ -154,6 +146,12 @@ func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 		return h.handleTextDocumentDefinition(ctx, conn, req)
 	case "textDocument/semanticTokens/full":
 		return h.handleTextDocumentSemanticTokensFull(ctx, conn, req)
+	case "textDocument/codeAction":
+		return h.handleCodeAction(ctx, conn, req)
+	case "textDocument/diagnostic":
+		return h.handleDiagnostics(ctx, conn, req)
+	case "workspace/executeCommand":
+		return h.handleWorkspaceExecuteCommand(ctx, conn, req)
 	}
 	return nil, nil
 }

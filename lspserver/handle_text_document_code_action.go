@@ -3,29 +3,25 @@ package lspserver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"log/slog"
 	"sylmark-server/data"
 	"sylmark-server/lsp"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
 
-func (h *LangHandler) handleTextDocumentCompletion(_ context.Context, _ *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
+func (h *LangHandler) handleCodeAction(_ context.Context, _ *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
 
 	if req.Params == nil {
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
 
-	var params lsp.CompletionParams
+	var params lsp.CodeActionParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
-
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
-	locs, ok := h.Store.GetCompletions(params)
-	slog.Info(fmt.Sprintf("Returing Completions %d", len(locs)))
-	return locs, ok
+	items := h.Store.GetCodeActions(params.TextDocument.URI, params.Context.Diagnostics, params.Range, h.parse)
 
+	return items, nil
 }

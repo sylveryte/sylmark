@@ -12,7 +12,7 @@ type Tag string
 
 func (s *Store) GetTagRefs(tag Tag) int {
 
-	clocs, found := s.tags[tag]
+	clocs, found := s.Tags[tag]
 	if found {
 		return len(clocs)
 	}
@@ -21,12 +21,12 @@ func (s *Store) GetTagRefs(tag Tag) int {
 }
 
 func (s *Store) GetTagReferences(tag Tag) []lsp.Location {
-	return s.tags[tag]
+	return s.Tags[tag]
 }
 
 func (s *Store) GetTagCompletions() []lsp.CompletionItem {
 	completions := []lsp.CompletionItem{}
-	for t, v := range s.tags {
+	for t, v := range s.Tags {
 		completions = append(completions, lsp.CompletionItem{
 			Label:         string(t),
 			Kind:          lsp.ClassCompletion,
@@ -46,11 +46,11 @@ func (s *Store) AddTag(node *tree_sitter.Node, uri lsp.DocumentURI, content *str
 
 	tag := GetTag(node, *content)
 	location := uri.LocationOf(node)
-	locations, found := s.tags[tag]
+	locations, found := s.Tags[tag]
 	if found {
-		s.tags[tag] = append(locations, location)
+		s.Tags[tag] = append(locations, location)
 	} else {
-		s.tags[tag] = []lsp.Location{location}
+		s.Tags[tag] = []lsp.Location{location}
 	}
 
 	return true
@@ -64,7 +64,7 @@ func (s *Store) RemoveTag(node *tree_sitter.Node, uri lsp.DocumentURI, content *
 
 	tag := GetTag(node, *content)
 	loc := uri.LocationOf(node)
-	tagLocs, found := s.tags[tag]
+	tagLocs, found := s.Tags[tag]
 	if found {
 		var newLocations []lsp.Location
 
@@ -76,9 +76,9 @@ func (s *Store) RemoveTag(node *tree_sitter.Node, uri lsp.DocumentURI, content *
 		}
 
 		if len(newLocations) == 0 {
-			delete(s.tags, tag)
+			delete(s.Tags, tag)
 		} else {
-			s.tags[tag] = newLocations
+			s.Tags[tag] = newLocations
 		}
 	}
 

@@ -21,7 +21,7 @@ func (h *LangHandler) handleTextDocumentDidClose(_ context.Context, _ *jsonrpc2.
 	}
 
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
-	h.onDocClosed(params.TextDocument.URI)
+	// h.onDocClosed(params.TextDocument.URI)
 
 	return nil, nil
 

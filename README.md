@@ -2,14 +2,6 @@
 
 Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in golang
 
-## Entities
-
-- Hash Tags `#sylmark #lsp`
-- Wikilinks File `[[Example]]`
-- Wikilinks with sub headings `[[Example#Objective]]`
-- Wikilinks within file `[[#Work Items]]`
-- Links Any File `[Go mod file](./go.mod)`
-
 ## Work Items
 
 ### v0.1 (current)
@@ -20,37 +12,60 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Tag
   - [x] Wikilinks
   - [x] Headings (references)
-- [/] Completions
+- [x] Completions
   - [x] Hash Tags
   - [x] Wikilinks File
   - [x] Wikilinks with sub headings
-  - [ ] Wikilinks within file
-- [/] Go To Definitions
+- [x] Go To Definitions
   - [x] Wikilinks File
   - [x] Wikilinks with sub headings
-  - [ ] Wikilinks within file
 - [x] Go to references
   - [x] Tags
   - [x] Wikilinks
   - [x] Headings
+- [x] Dim nonexisting wikilinks
+- [x] Diagnostics
+- [/] Sylgraph
+  - [ ] Move into lsp
+  * [/] Graph view of all nodes
+    - [x] Files
+    - [x] Links
+    - [ ] Tags
+  * [x] Click to open in editor
+- [x] Code actions
+  - [x] Created unresolved
+    - [x] Update internal data
+  - [x] Append heading
+    - [x] Update internal data
+
+### Bugs
+
+- [ ] Spaced completions fetch results in crash
 
 ## Roadmap
 
 ### v0.2 (next)
 
 - [ ] Sub tag support
-- [ ] Dim nonexisting wikilinks
 - [ ] Rename heading across workspace
-- [ ] Code actions
-- [ ] Diagnostics
 - [ ] Links Any File
+- [ ] Wikilinks within file
+  - [ ] Completions
+  - [ ] References
+- [ ] Sylgraph
+  - [ ] Graph filters
+  - [ ] Color based on groups
 
-### v0.3
+## Entities
 
-- [ ] Sylgraph - Graph view of all nodes
+- Hash Tags `#sylmark #lsp`
+- Wikilinks File `[[Example]]`
+- Wikilinks with sub headings `[[Example#Objective]]`
+- Wikilinks within file `[[#Work Items]]`
+- Links Any File `[Go mod file](./go.mod)`
 
 ## Structure
 
 - Package flow
 
-  `main <- handle <- data <- lsp`
+  `main <- handle <- server <- data <- lsp`

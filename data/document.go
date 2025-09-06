@@ -56,6 +56,15 @@ func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {
 	return dir, nil
 }
 
+
+func GetDirPathFromURI(uri lsp.DocumentURI) (string, error) {
+	path, err := PathFromURI(uri)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Dir(path), nil
+}
+
 func PathFromURI(uri lsp.DocumentURI) (string, error) {
 	parsedUrl, err := url.Parse(string(uri))
 	if err != nil {

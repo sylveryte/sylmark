@@ -31,14 +31,14 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 	case "tag":
 		{
 			tag := data.GetTag(node, string(doc))
-			locs := h.store.GetTagReferences(tag)
+			locs := h.Store.GetTagReferences(tag)
 			return locs, nil
 		}
 	case "wikilink", "wikitarget":
 		{
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
 			if ok {
-				return h.store.GetGTargetDefinition(target), nil
+				return h.Store.GetGTargetDefinition(target), nil
 			} else {
 				slog.Warn("Wikilink definition not found" + string(target))
 			}

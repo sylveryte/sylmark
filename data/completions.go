@@ -23,7 +23,7 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 	isWiki := false
 	isWikiEnd := true
 
-	// sylopti can we improve if say [[SOme space link starting from here#]]
+	// TODO fix sylbug can we improve if say [[SOme space link starting from here#]]
 	// this case where space is not considrered by below code
 	before, after, found := utils.FindWord(params.Position.Character, line)
 	before = strings.TrimSpace(before)

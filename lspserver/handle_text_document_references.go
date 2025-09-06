@@ -31,7 +31,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 	case "tag":
 		{
 			tag := data.GetTag(node, string(doc))
-			locs := h.store.GetTagReferences(tag)
+			locs := h.Store.GetTagReferences(tag)
 			return locs, nil
 		}
 	case "wikilink", "wikitarget", "heading", "title":
@@ -40,7 +40,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 			if !ok {
 				slog.Warn("No valid gtarget")
 			}
-			locs := h.store.GetGTargetReferences(target)
+			locs := h.Store.GetGTargetReferences(target)
 			if len(locs) > 0 {
 				return locs, nil
 			}

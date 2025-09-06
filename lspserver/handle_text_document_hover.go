@@ -29,27 +29,27 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 
 	r := lsp.GetRange(node)
 	var content string
-	slog.Info("node kind is " + node.Kind())
 	switch node.Kind() {
 	case "tag":
 		{
 			tag := data.GetTag(node, string(doc))
-			content = h.store.GetTagHover(tag)
+			content = h.Store.GetTagHover(tag)
 		}
 	case "heading", "title":
 		{
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
 			if ok {
-				content = h.store.GetGTargetHeadingHover(target)
+				content = h.Store.GetGTargetHeadingHover(target)
 			} else {
 				slog.Warn("Wikilink definition not found" + string(target))
 			}
 		}
 	case "wikilink", "wikitarget":
 		{
+
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
 			if ok {
-				content = h.store.GetGTargetWikilinkHover(target)
+				content = h.Store.GetGTargetWikilinkHover(target)
 			} else {
 				slog.Warn("Wikilink definition not found" + string(target))
 			}
