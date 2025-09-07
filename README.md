@@ -25,12 +25,12 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Headings
 - [x] Dim nonexisting wikilinks
 - [x] Diagnostics
-- [/] Sylgraph
-  - [ ] Move into lsp
-  * [/] Graph view of all nodes
+- [x] Sylgraph
+  - [x] Move into lsp
+  * [x] Graph view of all nodes
     - [x] Files
     - [x] Links
-    - [ ] Tags
+    - [x] Tags
   * [x] Click to open in editor
 - [x] Code actions
   - [x] Created unresolved
