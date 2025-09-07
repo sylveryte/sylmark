@@ -1,3 +1,3 @@
 package lsp
 
-type ShowDocumentFx func(uri DocumentURI, rng Range)error
+type ShowDocumentFx func(uri DocumentURI,external bool, rng Range)error

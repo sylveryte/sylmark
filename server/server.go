@@ -28,11 +28,11 @@ func NewServer(store *data.Store, config *data.Config, showDocument lsp.ShowDocu
 	}
 }
 
-func (s *Server) StartAndListen() {
+func (s *Server) StartAndListen() error {
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*", "http://localhost:5173", "http://127.0.0.1:5173"},
+		AllowedOrigins:   []string{"http://localhost:7462", "http://localhost:5173"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -44,7 +44,16 @@ func (s *Server) StartAndListen() {
 	v1 := chi.NewRouter()
 	r.Mount("/v1", v1)
 	s.SetupRoutes(v1)
-	slog.Info("Staring server at 7462")
-	//port 293001-293010
-	http.ListenAndServe(":7462", r)
+	fsHandler, err := GetStaticServer()
+	if err != nil {
+		slog.Info("failed to get fileServerHandler " + err.Error())
+		return err
+	}
+	r.Get("/*", fsHandler.ServeHTTP)
+	port := "7462"
+	slog.Info("Staring server at " + port)
+	slog.Info("Opening external")
+	go http.ListenAndServe(":"+port, r)
+	s.showDocument(lsp.DocumentURI("http://localhost:"+port), true, lsp.Range{})
+	return nil
 }

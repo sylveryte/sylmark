@@ -9,6 +9,6 @@ func (server *Server) Hello(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJson(Resp{
-		Hi: "hola",
+		Hi: "Holamigo",
 	}, w)
 }

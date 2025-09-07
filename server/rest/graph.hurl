@@ -1,3 +1,4 @@
+GET {{URL}}/g
 GET {{URL}}/hello
 GET {{URL}}/graph
 POST {{URL}}/document/show

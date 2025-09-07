@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
-	"sylmark/server"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -31,9 +30,6 @@ func (h *LangHandler) handleInitialize(_ context.Context, _ *jsonrpc2.Conn, req 
 		h.addRootPathAndLoad(rootPath)
 	}
 
-	server := server.NewServer(&h.Store, &h.Config, h.ShowDocument)
-	go server.StartAndListen()
-
 	return lsp.InitializeResult{
 		Capabilities: lsp.ServerCapabilities{
 			HoverProvider:    true,
@@ -51,7 +47,7 @@ func (h *LangHandler) handleInitialize(_ context.Context, _ *jsonrpc2.Conn, req 
 			},
 			CodeActionProvider: true,
 			ExecuteCommandProvider: lsp.ExecuteCommandOptions{
-				Commands: []string{"show"},
+				Commands: []string{"show", "graph"},
 			},
 			SemanticTokensProvider: lsp.SemanticTokensOptions{
 				Legend: lsp.SemanticTokensLegend{

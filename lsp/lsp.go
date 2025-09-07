@@ -125,6 +125,7 @@ type ExecuteCommandParams struct {
 }
 type ShowDocumentParams struct {
 	URI       DocumentURI `json:"uri"`
+	External  bool        `json:"external"`
 	Selection Range       `json:"selection"`
 	TakeFocus bool        `json:"takeFocus"`
 }

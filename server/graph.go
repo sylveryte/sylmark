@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log/slog"
 	"net/http"
 	"sylmark/data"
 	"sylmark/lsp"
@@ -35,7 +36,6 @@ func NewGraph() Graph {
 		Nodes: []Node{},
 		Links: []Link{},
 	}
-
 }
 
 func (server *Server) GetGraph(w http.ResponseWriter, r *http.Request) {
@@ -44,19 +44,36 @@ func (server *Server) GetGraph(w http.ResponseWriter, r *http.Request) {
 	}
 	s := server
 
-	graphMap := map[string][]lsp.Location{}
-	for _, v := range s.store.GLinkStore {
-		for _, def := range v.Defs {
-			node, _ := data.GetFileGTarget(def.URI)
-			nodeId := string(node)
-			refs, found := graphMap[nodeId]
-			if !found {
-				refs = []lsp.Location{}
-				graphMap[nodeId] = refs
+	nodeIdRefsMap := map[int][]lsp.Location{}
+	for gTarget, v := range s.store.GLinkStore {
+		if len(v.Defs) > 0 {
+			for _, def := range v.Defs {
+				target, _ := data.GetFileGTarget(def.URI)
+				node := server.graphStore.StoreAndGetId(target, 0, NodeKindFile)
+				refs, found := nodeIdRefsMap[node.Id]
+				if found {
+					nodeIdRefsMap[node.Id] = append(refs, v.Refs...)
+				} else {
+					refs = []lsp.Location{}
+					nodeIdRefsMap[node.Id] = refs
+				}
+			}
+		} else {
+			_target, _, _ := gTarget.SplitHeading()
+			node := server.graphStore.StoreAndGetId(string(_target), 0, NodeKindUnresolvedFile)
+			refs, found := nodeIdRefsMap[node.Id]
+			if found {
+				nodeIdRefsMap[node.Id] = append(refs, v.Refs...)
 			} else {
-				graphMap[nodeId] = append(refs, v.Refs...)
+				refs = []lsp.Location{}
+				nodeIdRefsMap[node.Id] = refs
 			}
 		}
+	}
+	// add tags
+	for tag, refs := range s.store.Tags {
+		node := server.graphStore.StoreAndGetId(string(tag), 0, NodeKindTag)
+		nodeIdRefsMap[node.Id] = refs
 	}
 
 	g := NewGraph()
@@ -64,33 +81,38 @@ func (server *Server) GetGraph(w http.ResponseWriter, r *http.Request) {
 	minCon := 99999
 
 	linkMap := map[int]map[int]bool{}
-	for nodeId, targets := range graphMap {
+	for nodeId, targets := range nodeIdRefsMap {
+
 		connections := len(targets)
 
 		minCon = min(minCon, connections)
 		maxCon = max(maxCon, connections)
 
-		node := s.graphStore.StoreAndGetId(nodeId, 0, NodeKindFile)
+		node, _ := s.graphStore.GetNodeFromId(nodeId)
 		g.Nodes = append(g.Nodes, node)
 
 		for _, target := range targets {
 			target, _ := data.GetFileGTarget(target.URI)
 
-			targetNode, _ := s.graphStore.GetNodeFromName(nodeId)
-			sourceNode, _ := s.graphStore.GetNodeFromName(string(target))
-			_, found := linkMap[sourceNode.Id]
+			sourceNode, found := s.graphStore.GetNodeFromName(string(target))
+			if !found {
+				slog.Info("Node not found should have been there")
+			}
+			sourceId := sourceNode.Id
+			_, found = linkMap[sourceId]
 			if found {
-				linkMap[sourceNode.Id][targetNode.Id] = true
+				linkMap[sourceId][nodeId] = true
 			} else {
-				linkMap[sourceNode.Id] = map[int]bool{}
-				linkMap[sourceNode.Id][targetNode.Id] = true
+				linkMap[sourceId] = map[int]bool{}
+				linkMap[sourceId][nodeId] = true
 			}
 
 		}
+
 	}
 
 	for sourceId, targetMap := range linkMap {
-		for targetId, _ := range targetMap {
+		for targetId := range targetMap {
 			g.Links = append(g.Links, Link{
 				Source: sourceId,
 				Target: targetId,

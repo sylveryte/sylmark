@@ -27,19 +27,24 @@ func (idStore *GraphStore) GetNodeFromId(id int) (node Node, found bool) {
 	return node, found
 }
 
+func (idStore *GraphStore) UpdateNode(target string, node Node) {
+	idStore.nodeStore[target] = node
+}
+
 func (idStore *GraphStore) StoreAndGetId(name string, val int, kind NodeKind) Node {
 
 	s := *idStore
 	node, found := s.nodeStore[name]
 	if !found {
 		// add new node
-		id := len(s.nodeStore)
-		s.nodeStore[name] = Node{
+		id := len(s.nodeStore) + 1
+		node = Node{
 			Id:   id,
 			Name: name,
 			Val:  val,
 			Kind: kind,
 		}
+		s.nodeStore[name] = node
 		s.idStore[id] = name
 	}
 	return node

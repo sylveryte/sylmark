@@ -8,6 +8,7 @@ import (
 	"os"
 	"sylmark/data"
 	"sylmark/lsp"
+	"sylmark/server"
 	"time"
 
 	"github.com/sourcegraph/jsonrpc2"
@@ -44,7 +45,7 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 			fileName := h.Config.GetDateString(date) + ".md"
 			uri, err := h.Config.GetFileURI(fileName, "journal/")
 			slog.Info("goto url is " + string(uri))
-			h.ShowDocument(uri, lsp.Range{})
+			h.ShowDocument(uri, false, lsp.Range{})
 		}
 	case "create":
 		{
@@ -83,6 +84,11 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 					h.loadDocData(filePath)
 				}
 			}
+		}
+	case "graph":
+		{
+			server := server.NewServer(&h.Store, &h.Config, h.ShowDocument)
+			go server.StartAndListen()
 		}
 	}
 

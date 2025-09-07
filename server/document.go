@@ -23,7 +23,7 @@ func (server *Server) ShowDocument(w http.ResponseWriter, r *http.Request) {
 		locs := server.store.GetGTargetDefinition(data.GTarget(node.Name))
 		if len(locs) > 0 {
 			loc := locs[0]
-			server.showDocument(loc.URI, loc.Range)
+			server.showDocument(loc.URI, false, loc.Range)
 		}
 	}
 }
