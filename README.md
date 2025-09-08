@@ -2,6 +2,53 @@
 
 Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in golang
 
+## Installation
+
+- on linux
+  `CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build`
+
+## Setup
+
+```lua
+    vim.lsp.config.sylmark = {
+      cmd = { "path/to/binary" },
+      root_markers = { '.sylroot' },
+      filetypes = { 'markdown' },
+      on_attach = function(client, bufnr)
+        vim.api.nvim_create_user_command(
+          "Daily",
+          function(args)
+            local input = args.args
+
+            client:exec_cmd({
+              title = "Show",
+              command = "show",
+              arguments = { input }, -- Also works with `vim.NIL`
+            }, { bufnr = bufnr })
+          end,
+          { desc = 'Open daily note', nargs = "*" }
+        )
+        vim.api.nvim_create_user_command(
+          "Graph",
+          function(args)
+            local input = args.args
+
+            client:exec_cmd({
+              title = "Open Graph",
+              command = "graph",
+              arguments = { input }, -- Also works with `vim.NIL`
+            }, { bufnr = bufnr })
+          end,
+          { desc = 'Start graph server and open', nargs = "*" }
+        )
+      end
+    }
+
+    vim.lsp.enable({
+      "sylmark",
+    })
+```
+
 ## Work Items
 
 ### v0.1 (current)

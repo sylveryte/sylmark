@@ -8,10 +8,13 @@ require (
 	github.com/tree-sitter/go-tree-sitter v0.25.0
 )
 
-require github.com/tj/go-naturaldate v1.3.0 // indirect
+require (
+	github.com/sylveryte/tree-sitter-sylmark v0.1.3 // indirect
+	github.com/tj/go-naturaldate v1.3.0
+)
 
 require (
-	github.com/go-chi/chi/v5 v5.2.3 // indirect
+	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/mattn/go-pointer v0.0.1 // indirect
 )
