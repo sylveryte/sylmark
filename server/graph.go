@@ -53,21 +53,20 @@ func (server *Server) GetGraph(w http.ResponseWriter, r *http.Request) {
 				refs, found := nodeIdRefsMap[node.Id]
 				if found {
 					nodeIdRefsMap[node.Id] = append(refs, v.Refs...)
-				} else {
-					refs = []lsp.Location{}
-					nodeIdRefsMap[node.Id] = refs
+				} else if v.Refs != nil {
+					nodeIdRefsMap[node.Id] = v.Refs
 				}
 			}
 		} else {
 			_target, _, _ := gTarget.SplitHeading()
 			node := server.graphStore.StoreAndGetId(string(_target), 0, NodeKindUnresolvedFile)
-			refs, found := nodeIdRefsMap[node.Id]
-			if found {
-				nodeIdRefsMap[node.Id] = append(refs, v.Refs...)
-			} else {
-				refs = []lsp.Location{}
-				nodeIdRefsMap[node.Id] = refs
-			}
+				refs, found := nodeIdRefsMap[node.Id]
+
+				if found {
+					nodeIdRefsMap[node.Id] = append(refs, v.Refs...)
+				} else if v.Refs != nil {
+					nodeIdRefsMap[node.Id] = v.Refs
+				}
 		}
 	}
 	// add tags
@@ -81,31 +80,29 @@ func (server *Server) GetGraph(w http.ResponseWriter, r *http.Request) {
 	minCon := 99999
 
 	linkMap := map[int]map[int]bool{}
-	for nodeId, targets := range nodeIdRefsMap {
+	for sourceNodeId, targets := range nodeIdRefsMap {
 
 		connections := len(targets)
 
 		minCon = min(minCon, connections)
 		maxCon = max(maxCon, connections)
 
-		node, _ := s.graphStore.GetNodeFromId(nodeId)
+		node, _ := s.graphStore.GetNodeFromId(sourceNodeId)
 		g.Nodes = append(g.Nodes, node)
+
+		_, found := linkMap[sourceNodeId]
+		if !found {
+			linkMap[sourceNodeId] = map[int]bool{}
+		}
 
 		for _, target := range targets {
 			target, _ := data.GetFileGTarget(target.URI)
 
-			sourceNode, found := s.graphStore.GetNodeFromName(string(target))
+			targetNode, found := s.graphStore.GetNodeFromName(string(target))
 			if !found {
-				slog.Info("Node not found should have been there")
+				slog.Error("Node not found should have been there")
 			}
-			sourceId := sourceNode.Id
-			_, found = linkMap[sourceId]
-			if found {
-				linkMap[sourceId][nodeId] = true
-			} else {
-				linkMap[sourceId] = map[int]bool{}
-				linkMap[sourceId][nodeId] = true
-			}
+			linkMap[sourceNodeId][targetNode.Id] = true
 
 		}
 
@@ -125,7 +122,6 @@ func (server *Server) GetGraph(w http.ResponseWriter, r *http.Request) {
 	// updated nodes with better size
 	nodes := []Node{}
 	for _, n := range g.Nodes {
-		// slog.Info(fmt.Sprintf("%d => (%d > %d) == %d", n.Val, maxCon, minCon, getSize(n.Val, maxCon, minCon)))
 		connections, found := linkMap[n.Id]
 		var totalConnections int
 		if !found {

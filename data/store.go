@@ -12,6 +12,7 @@ type Store struct {
 	Tags          map[Tag][]lsp.Location
 	GLinkStore    GLinkStore
 	DocStore      DocumentStore
+	LastOpenedDoc lsp.DocumentURI
 	ExcerptLength int16
 }
 

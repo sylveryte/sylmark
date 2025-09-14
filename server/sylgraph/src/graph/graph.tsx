@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import type { IGraphData, ILink, INode } from "./data";
 import { getSafeScale, getTextStyle, getTextXY } from "./utils";
-import { getColors, setHexOpacity } from "./colors";
+import { getColors, getNodeColor, setHexOpacity } from "./colors";
 
 interface OwnProps {
   data: IGraphData | undefined;
@@ -56,10 +56,13 @@ export const Graph = ({ data, openDoc }: OwnProps) => {
 
   useEffect(() => {
     // Setup d3 force simulation
+    // d
     const centerX = dim.width / 2,
       centerY = dim.height / 2;
     const simulation = d3
       .forceSimulation(nodes)
+      .alpha(1)
+      .alphaDecay(0.005)
       .force(
         "link",
         d3.forceLink<INode, ILink>(links).id((d) => d.id),
@@ -339,7 +342,7 @@ export const Graph = ({ data, openDoc }: OwnProps) => {
             ctx.fillStyle = colors.secondary;
             ctx.fill();
           } else {
-            ctx.fillStyle = setHexOpacity(colors.secondary, alpha);
+            ctx.fillStyle = getNodeColor(colors.secondary, alpha, node);
             // ctx.fillStyle = "pink";
             ctx.fill();
           }

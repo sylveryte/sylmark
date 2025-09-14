@@ -8,6 +8,8 @@ require (
 	github.com/tree-sitter/go-tree-sitter v0.25.0
 )
 
+require github.com/gorilla/websocket v1.5.3 // indirect
+
 require (
 	github.com/sylveryte/tree-sitter-sylmark v0.1.3 // indirect
 	github.com/tj/go-naturaldate v1.3.0

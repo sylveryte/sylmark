@@ -33,13 +33,13 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 					refs, rfound := s.GLinkStore.GetRefs(target)
 					msg := "Unresolved"
 					if rfound {
-						if len(refs)>1{
+						if len(refs) > 1 {
 
-						msg = fmt.Sprintf("%s referrenced %d times", msg, len(refs))
-					}else{
+							msg = fmt.Sprintf("%s referrenced %d times", msg, len(refs))
+						} else {
 
-						msg = fmt.Sprintf("%s referrence ", msg)
-					}
+							msg = fmt.Sprintf("%s referrence ", msg)
+						}
 					}
 					if !found {
 						rng := lsp.GetRange(n)
@@ -78,6 +78,16 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 			msg := fmt.Sprintf("File is referrenced %d times", len(refs))
 			items = append(items, lsp.Diagnostic{
 				Severity: lsp.DiagnosticSeverityInformation,
+				Message:  msg,
+				Range:    &lsp.Range{},
+			})
+
+		}
+		defs, dfound := s.GLinkStore.GetDefs(GTarget(fileTarget))
+		if dfound && len(defs) > 1 {
+			msg := fmt.Sprintf("File name has been used %d times. Consider different name for better wikilinks.", len(defs))
+			items = append(items, lsp.Diagnostic{
+				Severity: lsp.DiagnosticSeverityWarning,
 				Message:  msg,
 				Range:    &lsp.Range{},
 			})

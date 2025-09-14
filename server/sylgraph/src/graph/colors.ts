@@ -1,3 +1,5 @@
+import { NodeKind, type INode } from "./data";
+
 export type TColorFx = (alpha?: number) => string;
 export interface IColors {
   background: string; // background
@@ -12,6 +14,19 @@ export function isPreferredThemeDark() {
 
 export function getColors(): IColors {
   return isPreferredThemeDark() ? colors.dark[0] : colors.light[0];
+}
+
+export function getNodeColor(
+  color: string,
+  alpha: number,
+  node: INode,
+): string {
+  if (node.kind === NodeKind.UnresolvedFile && alpha > 0.2) {
+    return setHexOpacity(color, 0.2);
+  } else if (node.kind === NodeKind.Tag) {
+    return setHexOpacity("#67C090", alpha);
+  }
+  return setHexOpacity(color, alpha);
 }
 
 export const colors = {
