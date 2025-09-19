@@ -45,6 +45,18 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 				return locs, nil
 			}
 		}
+	default:
+		{
+			// get files references
+			target, ok := data.GetFileGTarget(params.TextDocument.URI)
+			if !ok {
+				slog.Warn("No valid gtarget")
+			}
+			locs := h.Store.GetGTargetReferences(data.GTarget(target))
+			if len(locs) > 0 {
+				return locs, nil
+			}
+		}
 	}
 
 	return nil, nil
