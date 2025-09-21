@@ -84,8 +84,52 @@ type WorkspaceFoldersServerCapabilities struct {
 	ChangeNotifications bool `json:"changeNotifications"`
 }
 
+type FileOperationPattern struct {
+	Glob string `json:"glob"` // **/*.md
+}
+
+type FileOperationFilter struct {
+	Scheme  string               `json:"scheme"` //file
+	Pattern FileOperationPattern `json:"pattern"`
+}
+
+type FileOperationRegistrationOptions struct {
+	Filters []FileOperationFilter `json:"filters"`
+}
+type FileDelete struct {
+	Uri DocumentURI `json:"uri"`
+}
+
+type DeleteFilesParams struct {
+	Files []FileDelete `json:"files"`
+}
+
+type FileCreate struct {
+	Uri DocumentURI `json:"uri"`
+}
+
+type CreateFilesParams struct {
+	Files []FileCreate `json:"files"`
+}
+
+type FileRename struct {
+	OldUri DocumentURI `json:"oldUri"`
+	NewUri DocumentURI `json:"newUri"`
+}
+
+type RenameFilesParams struct {
+	Files []FileRename `json:"files"`
+}
+
+type FileOperations struct {
+	DidDelete FileOperationRegistrationOptions `json:"didDelete"`
+	DidRename FileOperationRegistrationOptions `json:"didRename"`
+	DidCreate FileOperationRegistrationOptions `json:"didCreate"`
+}
+
 type ServerCapabilitiesWorkspace struct {
 	WorkspaceFolders WorkspaceFoldersServerCapabilities `json:"workspaceFolders"`
+	FileOperations   FileOperations                     `json:"fileOperations"`
 }
 type DiagnosticOptions struct {
 	InterFileDependencies bool `json:"interFileDependencies"`
@@ -93,19 +137,19 @@ type DiagnosticOptions struct {
 }
 
 type ServerCapabilities struct {
-	TextDocumentSync           TextDocumentSyncKind         `json:"textDocumentSync,omitempty"`
-	DocumentSymbolProvider     bool                         `json:"documentSymbolProvider,omitempty"`
-	CompletionProvider         *CompletionProvider          `json:"completionProvider,omitempty"`
-	DefinitionProvider         bool                         `json:"definitionProvider,omitempty"`
-	ReferencesProvider         bool                         `json:"referencesProvider,omitempty"`
-	SemanticTokensProvider     SemanticTokensOptions        `json:"semanticTokensProvider"`
-	DocumentFormattingProvider bool                         `json:"documentFormattingProvider,omitempty"`
-	DiagnosticProvider         DiagnosticOptions            `json:"diagnosticProvider"`
-	RangeFormattingProvider    bool                         `json:"documentRangeFormattingProvider,omitempty"`
-	HoverProvider              bool                         `json:"hoverProvider,omitempty"`
-	CodeActionProvider         bool                         `json:"codeActionProvider,omitempty"`
-	ExecuteCommandProvider     ExecuteCommandOptions        `json:"executeCommandProvider"`
-	Workspace                  *ServerCapabilitiesWorkspace `json:"workspace,omitempty"`
+	TextDocumentSync           TextDocumentSyncKind        `json:"textDocumentSync,omitempty"`
+	DocumentSymbolProvider     bool                        `json:"documentSymbolProvider,omitempty"`
+	CompletionProvider         *CompletionProvider         `json:"completionProvider,omitempty"`
+	DefinitionProvider         bool                        `json:"definitionProvider,omitempty"`
+	ReferencesProvider         bool                        `json:"referencesProvider,omitempty"`
+	SemanticTokensProvider     SemanticTokensOptions       `json:"semanticTokensProvider"`
+	DocumentFormattingProvider bool                        `json:"documentFormattingProvider,omitempty"`
+	DiagnosticProvider         DiagnosticOptions           `json:"diagnosticProvider"`
+	RangeFormattingProvider    bool                        `json:"documentRangeFormattingProvider,omitempty"`
+	HoverProvider              bool                        `json:"hoverProvider,omitempty"`
+	CodeActionProvider         bool                        `json:"codeActionProvider,omitempty"`
+	ExecuteCommandProvider     ExecuteCommandOptions       `json:"executeCommandProvider"`
+	Workspace                  ServerCapabilitiesWorkspace `json:"workspace,omitempty"`
 }
 
 type TextDocumentIdentifier struct {

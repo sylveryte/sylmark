@@ -30,13 +30,25 @@ func (h *LangHandler) handleInitialize(_ context.Context, _ *jsonrpc2.Conn, req 
 		h.addRootPathAndLoad(rootPath)
 	}
 
+	fileOperationRegistrationOptions := lsp.FileOperationRegistrationOptions{
+		Filters: []lsp.FileOperationFilter{
+			{Scheme: "file", Pattern: lsp.FileOperationPattern{Glob: "**/*.md"}},
+		},
+	}
 	return lsp.InitializeResult{
 		Capabilities: lsp.ServerCapabilities{
 			HoverProvider:    true,
 			TextDocumentSync: lsp.TDSKFull,
 			CompletionProvider: &lsp.CompletionProvider{
 				ResolveProvider:   true,
-				TriggerCharacters: []string{"[[","|", "#", "ln"},
+				TriggerCharacters: []string{"[[", "|", "#", "ln"},
+			},
+			Workspace: lsp.ServerCapabilitiesWorkspace{
+				FileOperations: lsp.FileOperations{
+					DidDelete: fileOperationRegistrationOptions,
+					DidRename: fileOperationRegistrationOptions,
+					DidCreate: fileOperationRegistrationOptions,
+				},
 			},
 
 			DefinitionProvider: true,

@@ -82,6 +82,13 @@ func (h *LangHandler) onDocCreated(uri lsp.DocumentURI, content string) {
 	h.loadDocData(docPath)
 }
 
+func (h *LangHandler) onDocDeleted(uri lsp.DocumentURI) {
+	docData, ok := h.Store.GetDocMustTree(uri, h.parse)
+	if ok {
+		h.Store.UnloadData(uri, string(docData.Content), docData.Tree.RootNode())
+		h.Store.RemoveDoc(uri)
+	}
+}
 func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
 	tree := h.parse(content, nil)
 	doc := data.Document(content)
@@ -152,6 +159,12 @@ func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 		return h.handleDiagnostics(ctx, conn, req)
 	case "workspace/executeCommand":
 		return h.handleWorkspaceExecuteCommand(ctx, conn, req)
+	case "workspace/didDeleteFiles":
+		return h.handleWorkspaceDidDeleteFiles(ctx, conn, req)
+	case "workspace/didCreateFiles":
+		return h.handleWorkspaceDidCreateFiles(ctx, conn, req)
+	case "workspace/didRenameFiles":
+		return h.handleWorkspaceDidRenameFiles(ctx, conn, req)
 	}
 	return nil, nil
 }

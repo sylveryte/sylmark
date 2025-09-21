@@ -11,15 +11,25 @@ func NewDocumentStore() DocumentStore {
 	return map[lsp.DocumentURI]DocumentData{}
 }
 
+// removes from DocStore and GLinkStore
 func (store *Store) RemoveDoc(uri lsp.DocumentURI) (docData DocumentData, found bool) {
 	if store == nil {
 		slog.Error("DocumentStore is empty")
 		return DocumentData{}, false
 	}
 	s := *store
+	// remove from DocStore
 	docData, found = s.DocStore[uri]
 	if found {
 		delete(s.DocStore, uri)
+	}
+	// remove from gliGLinkStore
+	gtarget, ok := GetFileGTarget(uri)
+	if ok {
+		s.GLinkStore.RemoveDef(GTarget(gtarget), lsp.Location{
+			URI:   uri,
+			Range: lsp.Range{},
+		})
 	}
 	return docData, found
 }

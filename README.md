@@ -91,13 +91,14 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 
 - [ ] Sub tag support
 - [ ] Rename heading across workspace
-- [ ] Links Any File
 - [ ] Wikilinks within file
   - [ ] Completions
   - [ ] References
 - [ ] Sylgraph
   - [ ] Graph filters
   - [ ] Color based on groups
+- [ ] Links Any File
+- [ ] Markdown style links
 
 ## Entities
 
