@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sylmark/lsp"
 
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
@@ -114,25 +115,78 @@ func (s *Store) RemoveGTarget(node *tree_sitter.Node, uri lsp.DocumentURI, conte
 	return s.GLinkStore.RemoveDef(gtarget, location)
 }
 
-func (s *Store) GetWikiCompletions(isWikiEnd bool, uri *lsp.DocumentURI) []lsp.CompletionItem {
+func (s *Store) GetWikiCompletions(arg string, needEnd bool, rng lsp.Range, uri *lsp.DocumentURI) []lsp.CompletionItem {
 	completions := []lsp.CompletionItem{}
-
+	pipeLoc := strings.IndexRune(arg, '|')
+	containsPipe := pipeLoc != -1
+	needConeal := strings.ContainsRune(arg, '#') && containsPipe
+	if needConeal {
+		arg = arg[:pipeLoc]
+	}
 	for _, t := range s.GLinkStore.GetTargets() {
+
+		target := string(t.target)
+		match := fuzzy.Match(arg, target)
+		if match == false {
+			continue
+		}
+
 		var link string
-		if isWikiEnd {
-			link = "[[" + string(t.target) + "]]"
+		if needEnd {
+			link = "[[" + target + "]]"
 		} else {
-			link = "[[" + string(t.target)
+			link = "[[" + target
 		}
 		var excerpt string
 		if t.loc != nil {
 			excerpt = s.GetExcerpt(*t.loc)
 		}
+		isFile := !strings.ContainsRune(link, '#')
+		sortText := "c"
+		kind := lsp.ReferenceCompletion
+		if isFile {
+			sortText = "b"
+			kind = lsp.FileCompletion
+		}
 		completions = append(completions, lsp.CompletionItem{
-			Label:  link,
-			Kind:   lsp.ReferenceCompletion,
+			Label:    link,
+			Kind:     kind,
+			SortText: sortText,
+			TextEdit: &lsp.TextEdit{
+				Range:   rng,
+				NewText: link,
+			},
 			Detail: excerpt,
 		})
+		if needConeal {
+			start := strings.IndexRune(link, '#')
+			end := strings.IndexRune(link, ']')
+			if start >= 0 {
+				var concealerText string
+				if end == -1 {
+					concealerText = link[start+1:]
+				} else {
+
+					concealerText = link[start+1 : end]
+				}
+				if needEnd {
+					link = "[[" + target + "|" + concealerText + "]]"
+				} else {
+					link = "[[" + target + "|" + concealerText
+				}
+				completions = append(completions, lsp.CompletionItem{
+					Label:    link,
+					Kind:     kind,
+					SortText: "a",
+					// sylopti can use InsertReplaceEdit  instead of lsp.TextEdit
+					TextEdit: &lsp.TextEdit{
+						Range:   rng,
+						NewText: link,
+					},
+					Detail: excerpt,
+				})
+			}
+		}
 	}
 
 	return completions

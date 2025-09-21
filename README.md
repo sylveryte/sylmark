@@ -85,10 +85,6 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Append heading
     - [x] Update internal data
 
-### Bugs
-
-- [ ] Spaced completions fetch results in crash
-
 ## Roadmap
 
 ### v0.2 (next)

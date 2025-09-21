@@ -3,8 +3,6 @@ package lspserver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
 
@@ -25,7 +23,6 @@ func (h *LangHandler) handleTextDocumentCompletion(_ context.Context, _ *jsonrpc
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
 	locs, ok := h.Store.GetCompletions(params)
-	slog.Info(fmt.Sprintf("Returing Completions %d", len(locs)))
 	return locs, ok
 
 }

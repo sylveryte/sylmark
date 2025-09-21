@@ -8,7 +8,10 @@ require (
 	github.com/tree-sitter/go-tree-sitter v0.25.0
 )
 
-require github.com/gorilla/websocket v1.5.3 // indirect
+require (
+	github.com/gorilla/websocket v1.5.3 // indirect
+	golang.org/x/text v0.9.0 // indirect
+)
 
 require (
 	github.com/sylveryte/tree-sitter-sylmark v0.1.3 // indirect
@@ -18,5 +21,6 @@ require (
 require (
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
+	github.com/lithammer/fuzzysearch v1.1.8
 	github.com/mattn/go-pointer v0.0.1 // indirect
 )

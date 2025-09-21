@@ -25,7 +25,7 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
-	slog.Info(fmt.Sprintf("Execute the command %s %v ", params.Command, params.Arguments))
+	// slog.Info(fmt.Sprintf("Execute the command %s %v ", params.Command, params.Arguments))
 
 	switch params.Command {
 	case "show":
@@ -70,7 +70,6 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 			if len(params.Arguments) > 1 && len(params.Arguments[0]) > 0 {
 				filePath := params.Arguments[0]
 				if heading := params.Arguments[1]; len(heading) > 0 {
-					slog.Info("Appending to file " + filePath)
 					f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.ModeAppend)
 					if err != nil {
 						slog.Error("Could not open file error is " + err.Error())

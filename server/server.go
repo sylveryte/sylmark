@@ -46,7 +46,7 @@ func (s *Server) StartAndListen() error {
 	s.SetupRoutes(v1)
 	fsHandler, err := GetStaticServer()
 	if err != nil {
-		slog.Info("failed to get fileServerHandler " + err.Error())
+		slog.Error("failed to get fileServerHandler " + err.Error())
 		return err
 	}
 	r.Get("/*", fsHandler.ServeHTTP)

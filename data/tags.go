@@ -24,12 +24,17 @@ func (s *Store) GetTagReferences(tag Tag) []lsp.Location {
 	return s.Tags[tag]
 }
 
-func (s *Store) GetTagCompletions() []lsp.CompletionItem {
+func (s *Store) GetTagCompletions(arg string, rng lsp.Range) []lsp.CompletionItem {
 	completions := []lsp.CompletionItem{}
 	for t, v := range s.Tags {
 		completions = append(completions, lsp.CompletionItem{
-			Label:         string(t),
-			Kind:          lsp.ClassCompletion,
+			Label:    string(t),
+			Kind:     lsp.EventCompletion,
+			SortText: fmt.Sprintf("%03d", 1000-len(v)),
+			TextEdit: &lsp.TextEdit{
+				Range:   rng,
+				NewText: string(t),
+			},
 			Detail:        string(t),
 			Documentation: fmt.Sprintf("#%d refs", len(v)),
 		})
