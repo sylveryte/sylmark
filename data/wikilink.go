@@ -126,7 +126,7 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, rng lsp.Range, uri 
 	for _, t := range s.GLinkStore.GetTargets() {
 
 		target := string(t.target)
-		match := fuzzy.Match(arg, target)
+		match := fuzzy.MatchFold(arg, target)
 		if match == false {
 			continue
 		}
