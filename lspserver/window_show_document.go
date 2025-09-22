@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"sylmark/lsp"
-	"time"
 )
 
 // returns isSucess
 func (h *LangHandler) ShowDocument(uri lsp.DocumentURI, external bool, rng lsp.Range) error {
 
 	result := lsp.ShowDocumentResult{}
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*3)
+	// ctx  := context.WithTimeout(context.Background(), time.Second*3)
+	ctx := context.Background()
 	err := h.Connection.Call(ctx, "window/showDocument",
 		lsp.ShowDocumentParams{
 			URI:       uri,

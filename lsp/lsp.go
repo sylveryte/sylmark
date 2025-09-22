@@ -167,6 +167,10 @@ type ExecuteCommandParams struct {
 	Command   string   `json:"command"`
 	Arguments []string `json:"arguments"`
 }
+type ShowMessageParams struct {
+	Type    MessageType `json:"type"`
+	Message string      `json:"message"`
+}
 type ShowDocumentParams struct {
 	URI       DocumentURI `json:"uri"`
 	External  bool        `json:"external"`
@@ -221,6 +225,10 @@ type TextDocumentPositionParams struct {
 	Position     Position               `json:"position"`
 }
 
+type PublishDiagnosticsParams struct {
+	URI         DocumentURI  `json:"uri"`
+	Diagnostics []Diagnostic `json:"diagnostics"`
+}
 type DocumentDiagnosticParams struct {
 	TextDocument TextDocumentIdentifier `json:"textDocument"`
 }
@@ -299,6 +307,8 @@ type DiagnosticSeverity int
 
 type DiagnosticTag int
 
+type MessageType int
+
 type CompletionItemKind int
 
 type CompletionItemTag int
@@ -351,6 +361,14 @@ const (
 const (
 	DiagnosticReportFull      DiagnosticReportKind = "full"
 	DiagnosticReportUnchanged DiagnosticReportKind = "unchanged"
+)
+
+const (
+	MessageTypeError   MessageType = 1
+	MessageTypeWarning MessageType = 2
+	MessageTypeInfo    MessageType = 3
+	MessageTypeLog     MessageType = 4
+	MessageTypeDebug   MessageType = 5
 )
 
 const (

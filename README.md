@@ -70,6 +70,8 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Headings
 - [x] Dim nonexisting wikilinks
 - [x] Diagnostics
+  - [ ] Publish after textchange to update references
+  - [ ] Publish after new file created (via code action)
 - [x] Sylgraph
   - [x] Move into lsp
   * [x] Graph view of all nodes
