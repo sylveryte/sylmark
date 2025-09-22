@@ -44,14 +44,12 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 			}
 			fileName := h.Config.GetDateString(date) + ".md"
 			uri, err := h.Config.GetFileURI(fileName, "journal/")
-			slog.Info("goto url is " + string(uri))
 			h.ShowDocument(uri, false, lsp.Range{})
 		}
 	case "create":
 		{
 			if len(params.Arguments) > 0 && len(params.Arguments[0]) > 0 {
 				filePath := params.Arguments[0]
-				slog.Info("Creating file " + filePath)
 				_, err := os.Create(filePath)
 				if err != nil {
 					slog.Error("Could not create error is " + err.Error())

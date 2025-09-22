@@ -38,7 +38,23 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 		{
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
 			if ok {
-				return h.Store.GetGTargetDefinition(target), nil
+				isSubheading := len(target) > 0 && target[0] == '#'
+				if isSubheading {
+					doc, ok := h.Store.GetDoc(params.TextDocument.URI)
+					if ok {
+
+						rng, ok := doc.Headings.GetDef(string(target))
+						if ok {
+							return lsp.Location{
+								URI:   params.TextDocument.URI,
+								Range: rng,
+							}, nil
+						}
+					}
+
+				} else {
+					return h.Store.GetGTargetDefinition(target), nil
+				}
 			} else {
 				slog.Warn("Wikilink definition not found" + string(target))
 			}

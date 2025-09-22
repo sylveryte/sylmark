@@ -14,8 +14,9 @@ import (
 
 type Document string
 type DocumentData struct {
-	Tree    *tree_sitter.Tree
-	Content Document
+	Tree     *tree_sitter.Tree
+	Content  Document
+	Headings *HeadingsStore
 }
 
 func NewDocumentData(doc Document, tree *tree_sitter.Tree) *DocumentData {
@@ -55,7 +56,6 @@ func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {
 	dir = filepath.Clean(dir)
 	return dir, nil
 }
-
 
 func GetDirPathFromURI(uri lsp.DocumentURI) (string, error) {
 	path, err := PathFromURI(uri)

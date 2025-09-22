@@ -40,7 +40,23 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 			if !ok {
 				slog.Warn("No valid gtarget")
 			}
-			locs := h.Store.GetGTargetReferences(target)
+			var locs []lsp.Location
+			withinTarget, found := target.GetWIthinTarget()
+			if found {
+				docData, ok := h.Store.GetDoc(params.TextDocument.URI)
+				if ok {
+					ranges, found := docData.Headings.GetRefs(string(withinTarget))
+					if found {
+						for _, r := range ranges {
+							locs = append(locs, lsp.Location{
+								URI:   params.TextDocument.URI,
+								Range: r,
+							})
+						}
+					}
+				}
+			}
+			locs = append(locs, h.Store.GetGTargetReferences(target)...)
 			if len(locs) > 0 {
 				return locs, nil
 			}

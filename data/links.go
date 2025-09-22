@@ -21,6 +21,14 @@ func getLinkUrl(node *tree_sitter.Node, content string) (url string, ok bool) {
 	return url, ok
 }
 
+func getHeadingTarget(node *tree_sitter.Node, content string) (link string, ok bool) {
+	link, ok = getHeadingTitle(node, content)
+	if ok {
+		link = "#" + link
+	}
+	return link, ok
+}
+
 func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bool) {
 
 	link, ok = lsp.FieldText(node, "title", content)

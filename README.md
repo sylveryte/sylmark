@@ -49,9 +49,7 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
     })
 ```
 
-## Work Items
-
-### v0.1 (current)
+## Roadmap
 
 - [x] Minimal Treesitter parser
   - [tree_sitter_sylmark](https://codeberg.org/sylveryte/tree-sitter-sylmark)
@@ -84,17 +82,13 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
     - [x] Update internal data
   - [x] Append heading
     - [x] Update internal data
-
-## Roadmap
-
-### v0.2 (next)
-
+- [x] Wikilinks within file
+  - [x] Completions
+  - [x] References
 - [ ] Sub tag support
 - [ ] Rename heading across workspace
-- [ ] Wikilinks within file
-  - [ ] Completions
-  - [ ] References
 - [ ] Sylgraph
+  - [ ] Local mode
   - [ ] Graph filters
   - [ ] Color based on groups
 - [ ] Links Any File

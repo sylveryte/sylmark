@@ -40,6 +40,7 @@ func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumen
 		// sylopti we can use oldDocData.tree to optimze it but initial try met with some weird issues, wrong tree study and use
 		tree := parse(changes.Text, nil)
 		updatedDocData = *NewDocumentData(doc, tree)
+		updatedDocData.Headings = s.GetHeadingWithinDataStore(uri, parse)
 		s.AddUpdateDoc(uri, &updatedDocData)
 	} else {
 		// sylopti
@@ -55,10 +56,7 @@ func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumen
 		))
 	}
 
-	// UnloadData
 	s.UnloadData(uri, string(oldDocData.Content), oldDocData.Tree.RootNode())
-
-	// LoadData
 	s.LoadData(uri, string(updatedDocData.Content), updatedDocData.Tree.RootNode())
 }
 
@@ -94,8 +92,11 @@ func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree
 			{
 				target, ok := GetWikilinkTarget(n, content, uri)
 				if ok {
-					loc := uri.LocationOf(n)
-					store.GLinkStore.AddRef(target, loc)
+					isSubheading := len(target) > 0 && target[0] == '#'
+					if !isSubheading {
+						loc := uri.LocationOf(n)
+						store.GLinkStore.AddRef(target, loc)
+					}
 				}
 			}
 		case "heading":

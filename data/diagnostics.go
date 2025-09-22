@@ -29,26 +29,42 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 			{
 				target, ok := GetWikilinkTarget(n, content, uri)
 				if ok {
-					_, found := s.GLinkStore.GetDefs(target)
-					refs, rfound := s.GLinkStore.GetRefs(target)
-					msg := "Unresolved"
-					if rfound {
-						if len(refs) > 1 {
-
-							msg = fmt.Sprintf("%s referrenced %d times", msg, len(refs))
-						} else {
-
-							msg = fmt.Sprintf("%s referrence ", msg)
+					isSubheading := len(target) > 0 && target[0] == '#'
+					if isSubheading {
+						starget := string(target)
+						_, found := doc.Headings.GetDef(starget)
+						if !found {
+							rng := lsp.GetRange(n)
+							items = append(items, lsp.Diagnostic{
+								Range:    &rng,
+								Severity: lsp.DiagnosticSeverityInformation,
+								Tags:     []lsp.DiagnosticTag{lsp.DiagnosticTagUnnecessary},
+								Message:  "Heading Unresolved",
+							})
 						}
-					}
-					if !found {
-						rng := lsp.GetRange(n)
-						items = append(items, lsp.Diagnostic{
-							Range:    &rng,
-							Severity: lsp.DiagnosticSeverityInformation,
-							Tags:     []lsp.DiagnosticTag{lsp.DiagnosticTagUnnecessary},
-							Message:  msg,
-						})
+					} else {
+
+						_, found := s.GLinkStore.GetDefs(target)
+						refs, rfound := s.GLinkStore.GetRefs(target)
+						msg := "Unresolved"
+						if rfound {
+							if len(refs) > 1 {
+
+								msg = fmt.Sprintf("%s referrenced %d times", msg, len(refs))
+							} else {
+
+								msg = fmt.Sprintf("%s referrence ", msg)
+							}
+						}
+						if !found {
+							rng := lsp.GetRange(n)
+							items = append(items, lsp.Diagnostic{
+								Range:    &rng,
+								Severity: lsp.DiagnosticSeverityInformation,
+								Tags:     []lsp.DiagnosticTag{lsp.DiagnosticTagUnnecessary},
+								Message:  msg,
+							})
+						}
 					}
 				}
 			}
@@ -57,14 +73,29 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 				target, ok := GetWikilinkTarget(n, content, uri)
 				if ok {
 					refs, found := s.GLinkStore.GetRefs(target)
-					if found {
-						msg := fmt.Sprintf("Referrenced %d times", len(refs))
-						rng := lsp.GetRange(n)
-						items = append(items, lsp.Diagnostic{
-							Range:    &rng,
-							Severity: lsp.DiagnosticSeverityInformation,
-							Message:  msg,
-						})
+					headingTarget, _ := getHeadingTarget(n, content)
+					subrefs, subfound := doc.Headings.GetRefs(headingTarget)
+					if found || subfound {
+						if subfound && len(subrefs) > 0 {
+							rng := lsp.GetRange(n)
+							msg := fmt.Sprintf("Referrenced %d+%d=%d times", len(refs), len(subrefs), len(refs)+len(subrefs))
+							if len(refs) == 0 {
+								msg = fmt.Sprintf("Referrenced +%d times", len(subrefs))
+							}
+							items = append(items, lsp.Diagnostic{
+								Range:    &rng,
+								Severity: lsp.DiagnosticSeverityInformation,
+								Message:  msg,
+							})
+						} else if len(refs) > 0 {
+
+							rng := lsp.GetRange(n)
+							items = append(items, lsp.Diagnostic{
+								Range:    &rng,
+								Severity: lsp.DiagnosticSeverityInformation,
+								Message:  fmt.Sprintf("Referrenced %d times", len(refs)),
+							})
+						}
 					}
 				}
 			}

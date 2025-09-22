@@ -95,6 +95,8 @@ func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
 
 	docData := data.NewDocumentData(doc, tree)
 	h.Store.AddUpdateDoc(uri, docData)
+	docData.Headings = h.Store.GetHeadingWithinDataStore(uri, h.parse)
+	h.Store.AddUpdateDoc(uri, docData)
 }
 
 func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocumentContentChangeEvent) {
@@ -129,7 +131,7 @@ func (h *LangHandler) parse(content string, oldTree *tree_sitter.Tree) *tree_sit
 }
 
 func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
-	slog.Info("------------------------reqmethod=> " + req.Method)
+	slog.Info("-------------reqmethod=> " + req.Method)
 	switch req.Method {
 	case "initialize":
 		return h.handleInitialize(ctx, conn, req)

@@ -39,11 +39,11 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 		completions = append(completions, tagCompletions...)
 	case CompletionWiki:
 		// wiklink
-		wikiCompletions := store.GetWikiCompletions(arg, true, rng, nil)
+		wikiCompletions := store.GetWikiCompletions(arg, true, rng, &params.TextDocument.URI)
 		completions = append(completions, wikiCompletions...)
 	case CompletionWikiWithEnd:
 		// wiklink
-		wikiCompletions := store.GetWikiCompletions(arg, false, rng, nil)
+		wikiCompletions := store.GetWikiCompletions(arg, false, rng, &params.TextDocument.URI)
 		completions = append(completions, wikiCompletions...)
 	}
 
