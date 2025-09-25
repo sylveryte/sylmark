@@ -30,7 +30,7 @@ func getHeadingTarget(node *tree_sitter.Node, content string) (link string, ok b
 }
 
 // this is to overcome parser issue of recognising `conten # not heading` as heading
-func isActualHeading(node *tree_sitter.Node, content string) bool {
+func isValidHeading(node *tree_sitter.Node, content string) bool {
 	// check if starting from 0
 	startPoint := node.StartPosition()
 	if startPoint.Column == 0 {
@@ -51,7 +51,7 @@ func isActualHeading(node *tree_sitter.Node, content string) bool {
 }
 
 func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bool) {
-	ok = isActualHeading(node, content)
+	ok = isValidHeading(node, content)
 	if !ok {
 		return
 	}

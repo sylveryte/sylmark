@@ -4,10 +4,10 @@ Note: Github is mirror, original repo on [codeberg](https://codeberg.org/sylvery
 
 Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in golang
 
-## Installation
+## Build
 
-- on linux
-  `CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build`
+- Using go
+  `CGO_ENABLED=1 go build`
 
 ## Setup
 
