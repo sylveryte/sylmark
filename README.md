@@ -1,3 +1,5 @@
+Note: Github has mirror original repo on [codeberg](https://codeberg.org/sylveryte/sylmark)
+
 # Sylmark
 
 Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in golang
