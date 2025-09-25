@@ -1,4 +1,4 @@
-Note: Github has mirror original repo on [codeberg](https://codeberg.org/sylveryte/sylmark)
+Note: Github is mirror, original repo on [codeberg](https://codeberg.org/sylveryte/sylmark)
 
 # Sylmark
 
