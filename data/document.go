@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
@@ -14,9 +15,10 @@ import (
 
 type Document string
 type DocumentData struct {
-	Tree     *tree_sitter.Tree
-	Content  Document
-	Headings *HeadingsStore
+	Tree       *tree_sitter.Tree
+	InlineTree *tree_sitter.Tree
+	Content    Document
+	Headings   *HeadingsStore
 }
 
 func NewDocumentData(doc Document, tree *tree_sitter.Tree) *DocumentData {
@@ -27,13 +29,17 @@ func NewDocumentData(doc Document, tree *tree_sitter.Tree) *DocumentData {
 }
 
 // sylopti
-func (doc *Document) GetLine(lineNumber int) string {
-	for i, v := range bytes.Split([]byte(*doc), []byte("\n")) {
-		if i == lineNumber {
-			return string(v)
-		}
+func GetLineFromContent(content string, lineNumber int) (string, bool) {
+	lines := strings.Split(content, "\n")
+	if len(lines) > lineNumber {
+		return lines[lineNumber], true
 	}
-	return ""
+	return "", false
+}
+
+func (doc *Document) GetLine(lineNumber int) string {
+	line, _ := GetLineFromContent(string(*doc), lineNumber)
+	return line
 }
 
 func DirPathFromURI(uri lsp.DocumentURI) (path string, er error) {

@@ -29,7 +29,32 @@ func getHeadingTarget(node *tree_sitter.Node, content string) (link string, ok b
 	return link, ok
 }
 
+// this is to overcome parser issue of recognising `conten # not heading` as heading
+func isActualHeading(node *tree_sitter.Node, content string) bool {
+	// check if starting from 0
+	startPoint := node.StartPosition()
+	if startPoint.Column == 0 {
+		return true
+	}
+
+	// since # should start within first 4 columns
+	if startPoint.Column > 3 {
+		return false
+	}
+	// check if from 0 to node start column is blank string
+	line, ok := GetLineFromContent(content, int(startPoint.Row))
+	if !ok {
+	}
+
+	trimmed := strings.TrimSpace(line[0:startPoint.Column])
+	return len(trimmed) == 0
+}
+
 func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bool) {
+	ok = isActualHeading(node, content)
+	if !ok {
+		return
+	}
 
 	link, ok = lsp.FieldText(node, "title", content)
 
