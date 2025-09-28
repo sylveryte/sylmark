@@ -12,6 +12,7 @@ type Store struct {
 	Tags          map[Tag][]lsp.Location
 	GLinkStore    GLinkStore
 	DocStore      DocumentStore
+	DateStore     DateStore
 	LastOpenedDoc lsp.DocumentURI
 	ExcerptLength int16
 }
@@ -21,6 +22,7 @@ func NewStore() Store {
 		Tags:          map[Tag][]lsp.Location{},
 		GLinkStore:    NewGlinkStore(),
 		DocStore:      NewDocumentStore(),
+		DateStore:     NewDateStore(),
 		ExcerptLength: 10,
 	}
 }

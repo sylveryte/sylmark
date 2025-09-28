@@ -37,6 +37,9 @@ type SemanticTokensLegend struct {
 	TokenTypes     []SemanticTokenType     `json:"tokenTypes"`
 	TokenModifiers []SemanticTokenModifier `json:"tokenModifiers"`
 }
+type WorkspaceSymbolOptions struct {
+	ResolveProvider bool `json:"resolveProvider"`
+}
 type ExecuteCommandOptions struct {
 	Commands []string `json:"commands"`
 }
@@ -150,6 +153,7 @@ type ServerCapabilities struct {
 	CodeActionProvider         bool                        `json:"codeActionProvider,omitempty"`
 	ExecuteCommandProvider     ExecuteCommandOptions       `json:"executeCommandProvider"`
 	Workspace                  ServerCapabilitiesWorkspace `json:"workspace,omitempty"`
+	WorkspaceSymbolProvider    WorkspaceSymbolOptions      `json:"workspaceSymbolProvider"`
 }
 
 type TextDocumentIdentifier struct {
@@ -161,6 +165,10 @@ type TextDocumentItem struct {
 	LanguageID string      `json:"languageId"`
 	Version    int         `json:"version"`
 	Text       string      `json:"text"`
+}
+
+type WorkspaceSymbolParams struct {
+	Query string `json:"query"`
 }
 
 type ExecuteCommandParams struct {
@@ -345,6 +353,44 @@ type CompletionItem struct {
 	Command             *Command            `json:"command,omitempty"`
 	Data                any                 `json:"data,omitempty"`
 }
+
+type SymbolKind int
+
+type WorkspaceSymbol struct {
+	Name          string     `json:"name"`
+	Kind          SymbolKind `json:"kind"`
+	ContainerName string     `json:"containerName"`
+	Location      Location   `json:"location"`
+}
+
+const (
+	SymbolKindFile          SymbolKind = 1
+	SymbolKindModule        SymbolKind = 2
+	SymbolKindNamespace     SymbolKind = 3
+	SymbolKindPackage       SymbolKind = 4
+	SymbolKindClass         SymbolKind = 5
+	SymbolKindMethod        SymbolKind = 6
+	SymbolKindProperty      SymbolKind = 7
+	SymbolKindField         SymbolKind = 8
+	SymbolKindConstructor   SymbolKind = 9
+	SymbolKindEnum          SymbolKind = 10
+	SymbolKindInterface     SymbolKind = 11
+	SymbolKindFunction      SymbolKind = 12
+	SymbolKindVariable      SymbolKind = 13
+	SymbolKindConstant      SymbolKind = 14
+	SymbolKindString        SymbolKind = 15
+	SymbolKindNumber        SymbolKind = 16
+	SymbolKindBoolean       SymbolKind = 17
+	SymbolKindArray         SymbolKind = 18
+	SymbolKindObject        SymbolKind = 19
+	SymbolKindKey           SymbolKind = 20
+	SymbolKindNull          SymbolKind = 21
+	SymbolKindEnumMember    SymbolKind = 22
+	SymbolKindStruct        SymbolKind = 23
+	SymbolKindEvent         SymbolKind = 24
+	SymbolKindOperator      SymbolKind = 25
+	SymbolKindTypeParameter SymbolKind = 26
+)
 
 const (
 	DiagnosticSeverityError       DiagnosticSeverity = 1

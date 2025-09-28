@@ -41,7 +41,7 @@ func (h *LangHandler) handleInitialize(_ context.Context, _ *jsonrpc2.Conn, req 
 			TextDocumentSync: lsp.TDSKFull,
 			CompletionProvider: &lsp.CompletionProvider{
 				ResolveProvider:   true,
-				TriggerCharacters: []string{"[[", "|", "#", "ln"},
+				TriggerCharacters: []string{"[[", "|", "#"},
 			},
 			Workspace: lsp.ServerCapabilitiesWorkspace{
 				FileOperations: lsp.FileOperations{
@@ -50,7 +50,9 @@ func (h *LangHandler) handleInitialize(_ context.Context, _ *jsonrpc2.Conn, req 
 					DidCreate: fileOperationRegistrationOptions,
 				},
 			},
-
+			WorkspaceSymbolProvider: lsp.WorkspaceSymbolOptions{
+				ResolveProvider: true,
+			},
 			DefinitionProvider: true,
 			ReferencesProvider: true,
 			DiagnosticProvider: lsp.DiagnosticOptions{

@@ -9,7 +9,7 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - Using go
   `CGO_ENABLED=1 go build`
 
-## Setup
+## Neovim Setup
 
 ```lua
     vim.lsp.config.sylmark = {
@@ -63,6 +63,7 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Hash Tags
   - [x] Wikilinks File
   - [x] Wikilinks with sub headings
+  - [x] Common dates links
 - [x] Go To Definitions
   - [x] Wikilinks File
   - [x] Wikilinks with sub headings
@@ -75,12 +76,11 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [ ] Publish after textchange to update references
   - [ ] Publish after new file created (via code action)
 - [x] Sylgraph
-  - [x] Move into lsp
-  * [x] Graph view of all nodes
+  - [x] Graph view of all nodes
     - [x] Files
     - [x] Links
     - [x] Tags
-  * [x] Click to open in editor
+  - [x] Click to open in editor
 - [x] Code actions
   - [x] Created unresolved
     - [x] Update internal data
@@ -89,14 +89,16 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - [x] Wikilinks within file
   - [x] Completions
   - [x] References
-- [ ] Sub tag support
-- [ ] Rename heading across workspace
+- [x] Symbols
+  - [x] Dynamic workspace symbols
+- [ ] Markdown style links
+- [ ] Nested tag support
 - [ ] Sylgraph
   - [ ] Local mode
   - [ ] Graph filters
   - [ ] Color based on groups
-- [ ] Links Any File
-- [ ] Markdown style links
+- [ ] Markdown links Any File
+- [ ] Rename heading across workspace
 
 ## Entities
 

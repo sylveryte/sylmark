@@ -18,7 +18,7 @@ func NewConfig() Config {
 	rmakers := []string{".sylroot"}
 	return Config{
 		RootMarkers: &rmakers,
-		DateLayout:  "2006-01-02",
+		DateLayout:  time.DateOnly,
 	}
 }
 

@@ -81,7 +81,7 @@ func GetWikilinkTarget(node *tree_sitter.Node, content string, uri lsp.DocumentU
 		if node.Kind() == "heading" {
 			heading, ok = getHeadingTitle(node, content)
 			if !ok {
-				slog.Error("Could not extract heading")
+				slog.Error("GetWikilinkTarget Could not extract heading")
 				return "", false
 			}
 		} else {

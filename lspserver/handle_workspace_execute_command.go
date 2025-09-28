@@ -3,7 +3,6 @@ package lspserver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"os"
 	"sylmark/data"
@@ -31,11 +30,11 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 	case "show":
 		{
 			arg := "today"
-			slog.Info(fmt.Sprintf("Arg is bef %s %d", arg, len(params.Arguments)))
+			// slog.Info(fmt.Sprintf("Arg is bef %s %d", arg, len(params.Arguments)))
 			if len(params.Arguments) > 0 && len(params.Arguments[0]) > 0 {
 				arg = params.Arguments[0]
 			}
-			slog.Info("Arg is " + arg)
+			// slog.Info("Arg is " + arg)
 
 			date, err := naturaldate.Parse(arg, time.Now())
 			if err != nil {

@@ -53,7 +53,7 @@ func (h *LangHandler) loadAllClosedDocsData() {
 	}
 
 	filepath.WalkDir(h.Config.RootPath, func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() && strings.HasSuffix(path, ".git") {
+		if d.IsDir() && (strings.HasSuffix(path, ".git") || strings.HasSuffix(path, "node_modules")) {
 			return filepath.SkipDir
 		}
 		if !d.IsDir() && strings.HasSuffix(path, ".md") {
@@ -167,6 +167,8 @@ func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 		return h.handleWorkspaceDidCreateFiles(ctx, conn, req)
 	case "workspace/didRenameFiles":
 		return h.handleWorkspaceDidRenameFiles(ctx, conn, req)
+	case "workspace/symbol":
+		return h.handleWorkspaceSymbol(ctx, conn, req)
 	}
 	return nil, nil
 }

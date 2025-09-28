@@ -24,7 +24,7 @@ func (t GTarget) SplitHeading() (gTarget GTarget, heading string, hasHeading boo
 	}
 	return t, "", false
 }
-func (t GTarget) GetWIthinTarget() (target GTarget,  hasHeading bool) {
+func (t GTarget) GetWIthinTarget() (target GTarget, hasHeading bool) {
 	ts := string(t)
 	if strings.ContainsRune(ts, '#') {
 		splits := strings.Split(ts, "#")
@@ -88,7 +88,7 @@ func (s *Store) AddGTarget(node *tree_sitter.Node, uri lsp.DocumentURI, content 
 
 	heading, ok := getHeadingTitle(node, *content)
 	if !ok {
-		slog.Error("Could not extract heading")
+		// slog.Error("AddGTarget Could not extract heading")
 		return false
 	}
 	gtarget, ok := getGTarget(heading, uri)
@@ -110,7 +110,7 @@ func (s *Store) RemoveGTarget(node *tree_sitter.Node, uri lsp.DocumentURI, conte
 
 	heading, ok := getHeadingTitle(node, *content)
 	if !ok {
-		slog.Error("Could not extract heading")
+		slog.Error("RemoveGTarget Could not extract heading")
 		return false
 	}
 	gtarget, ok := getGTarget(heading, uri)
@@ -227,6 +227,9 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, rng lsp.Range, uri 
 			}
 		}
 	}
+
+	dateCompletions := s.getDateCompletions(arg, needEnd, rng)
+	completions = append(completions, dateCompletions...)
 
 	return completions
 }
