@@ -56,7 +56,7 @@ func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bo
 		return
 	}
 
-	link, ok = lsp.FieldText(node, "title", content)
+	link, ok = lsp.FieldText(node, "heading_content", content)
 
 	if !ok {
 		return
@@ -71,14 +71,14 @@ func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bo
 func GetWikilinkTarget(node *tree_sitter.Node, content string, uri lsp.DocumentURI) (target GTarget, ok bool) {
 
 	var link string
-	if node.Kind() == "wikilink" {
-		link, ok = lsp.FieldText(node, "target", content)
-		if !ok {
-			return
-		}
-	} else if node.Kind() == "heading" || node.Kind() == "title" {
+	if node.Kind() == "link_destination" {
+		link = lsp.GetNodeContent(*node, content)
+	} else if node.Kind() == "wiki_link" {
+		ch := node.Child(2)
+		link = lsp.GetNodeContent(*ch, content)
+	} else if node.Kind() == "atx_heading" || node.Kind() == "heading_content" {
 		var heading string
-		if node.Kind() == "heading" {
+		if node.Kind() == "atx_heading" {
 			heading, ok = getHeadingTitle(node, content)
 			if !ok {
 				slog.Error("GetWikilinkTarget Could not extract heading")
@@ -94,15 +94,15 @@ func GetWikilinkTarget(node *tree_sitter.Node, content string, uri lsp.DocumentU
 			return "", false
 		}
 		link = string(gtarget)
-	} else if node.Parent().Kind() == "wikilink" {
-		link = lsp.GetNodeContent(*node, content)
 	} else {
 		return "", false
 	}
 
-	if strings.Contains(link, "|") {
-		link = strings.Split(link, "|")[0]
-	}
+	// syltodo delete
+	// if strings.Contains(link, "|") {
+	// 	link = strings.Split(link, "|")[0]
+	// }
+	//
 
 	target = GTarget(strings.TrimSpace(link))
 

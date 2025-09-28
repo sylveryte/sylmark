@@ -48,8 +48,8 @@ func (store *Store) AddUpdateDoc(uri lsp.DocumentURI, docData *DocumentData) boo
 func (store *Store) GetDocMustTree(uri lsp.DocumentURI, parse lsp.ParseFunction) (docData DocumentData, ok bool) {
 	docData, found := store.GetDoc(uri)
 	if found {
-		if docData.Tree == nil {
-			docData.Tree = parse(string(docData.Content), nil)
+		if docData.Trees == nil {
+			docData.Trees = parse(string(docData.Content), nil)
 			store.AddUpdateDoc(uri, &docData)
 		}
 		return docData, true

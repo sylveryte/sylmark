@@ -35,7 +35,7 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 			tag := data.GetTag(node, string(doc))
 			content = h.Store.GetTagHover(tag)
 		}
-	case "heading", "title":
+	case "atx_heading", "heading_content":
 		{
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
 			if ok {
@@ -44,7 +44,7 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 				slog.Warn("Wikilink definition not found" + string(target))
 			}
 		}
-	case "wikilink", "wikitarget":
+	case "wiki_link", "link_destination":
 		{
 
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)

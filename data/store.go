@@ -58,24 +58,28 @@ func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumen
 		))
 	}
 
-	s.UnloadData(uri, string(oldDocData.Content), oldDocData.Tree.RootNode())
-	s.LoadData(uri, string(updatedDocData.Content), updatedDocData.Tree.RootNode())
+	s.UnloadData(uri, string(oldDocData.Content), oldDocData.Trees)
+	s.LoadData(uri, string(updatedDocData.Content), updatedDocData.Trees)
 }
 
-func (store *Store) UnloadData(uri lsp.DocumentURI, content string, rootNode *tree_sitter.Node) {
-	lsp.TraverseNodeWith(rootNode, func(n *tree_sitter.Node) {
+func (store *Store) UnloadData(uri lsp.DocumentURI, content string, trees *lsp.Trees) {
+	lsp.TraverseNodeWith(trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
-		case "wikilink":
+		case "heading":
+			{
+				store.RemoveGTarget(n, uri, &content)
+			}
+		}
+	})
+	lsp.TraverseNodeWith(trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
+		switch n.Kind() {
+		case "wiki_link":
 			{
 				target, ok := GetWikilinkTarget(n, content, uri)
 				if ok {
 					loc := uri.LocationOf(n)
 					store.GLinkStore.RemoveRef(target, loc)
 				}
-			}
-		case "heading":
-			{
-				store.RemoveGTarget(n, uri, &content)
 			}
 		case "tag":
 			{
@@ -85,12 +89,21 @@ func (store *Store) UnloadData(uri lsp.DocumentURI, content string, rootNode *tr
 	})
 }
 
-func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree_sitter.Node) {
+func (store *Store) LoadData(uri lsp.DocumentURI, content string, trees *lsp.Trees) {
 
 	store.AddFileGTarget(uri)
-	lsp.TraverseNodeWith(rootNode, func(n *tree_sitter.Node) {
+	lsp.TraverseNodeWith(trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
-		case "wikilink":
+		case "atx_heading":
+			{
+				store.AddGTarget(n, uri, &content)
+			}
+		}
+	})
+
+	lsp.TraverseNodeWith(trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
+		switch n.Kind() {
+		case "wiki_link":
 			{
 				target, ok := GetWikilinkTarget(n, content, uri)
 				if ok {
@@ -100,10 +113,6 @@ func (store *Store) LoadData(uri lsp.DocumentURI, content string, rootNode *tree
 						store.GLinkStore.AddRef(target, loc)
 					}
 				}
-			}
-		case "heading":
-			{
-				store.AddGTarget(n, uri, &content)
 			}
 		case "tag":
 			{

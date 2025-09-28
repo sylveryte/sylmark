@@ -130,7 +130,7 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, rng lsp.Range, uri 
 	isWithin := (len(arg) > 0 && arg[0] == '#') || (len(strppedArg) > 0 && strppedArg[0] == '#')
 	if isWithin {
 		doc, ok := s.GetDoc(*uri)
-		if ok && doc.Tree != nil {
+		if ok && doc.Trees != nil {
 			headings := GetHeadings(&doc)
 			for _, target := range headings {
 				var link string

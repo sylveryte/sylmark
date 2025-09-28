@@ -7,9 +7,26 @@ import (
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-type ParseFunction func(content string, oldTree *tree_sitter.Tree) *tree_sitter.Tree
+type Trees [2]*tree_sitter.Tree
 
-func printTsTree(node tree_sitter.Node, depth int, cont string) {
+func (t *Trees) GetMainTree() *tree_sitter.Tree {
+	if t != nil {
+		return t[0]
+	}
+	slog.Error("No maintree")
+	return nil
+}
+func (t *Trees) GetInlineTree() *tree_sitter.Tree {
+	if t != nil {
+		return t[1]
+	}
+	slog.Error("No inlinetree")
+	return nil
+}
+
+type ParseFunction func(content string, oldTrees *Trees) *Trees
+
+func PrintTsTree(node tree_sitter.Node, depth int, cont string) {
 	indent := ""
 	for range depth {
 		indent += "  "
@@ -20,7 +37,7 @@ func printTsTree(node tree_sitter.Node, depth int, cont string) {
 
 	for i := range int(node.ChildCount()) {
 		child := node.Child(uint(i))
-		printTsTree(*child, depth+1, cont)
+		PrintTsTree(*child, depth+1, cont)
 	}
 }
 

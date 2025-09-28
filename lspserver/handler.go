@@ -2,6 +2,7 @@ package lspserver
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"path/filepath"
@@ -11,8 +12,8 @@ import (
 	"sylmark/utils"
 	"time"
 
-	tree_sitter_sylmark "codeberg.org/sylveryte/tree-sitter-sylmark/bindings/go"
 	"github.com/sourcegraph/jsonrpc2"
+	tree_sitter_markdown "github.com/sylveryte/tree-sitter-markdown/bindings/go"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
@@ -22,11 +23,12 @@ type ServerDebouncers = struct {
 }
 
 type LangHandler struct {
-	Parser     *tree_sitter.Parser
-	Store      data.Store
-	Debouncers *ServerDebouncers
-	Config     data.Config
-	Connection *jsonrpc2.Conn
+	Parser       *tree_sitter.Parser
+	InlineParser *tree_sitter.Parser
+	Store        data.Store
+	Debouncers   *ServerDebouncers
+	Config       data.Config
+	Connection   *jsonrpc2.Conn
 }
 
 func NewHandler() (hanlder *LangHandler) {
@@ -42,7 +44,9 @@ func NewHandler() (hanlder *LangHandler) {
 
 func (h *LangHandler) addRootPathAndLoad(dir string) {
 	h.Config.RootPath = dir
+	t := time.Now()
 	h.loadAllClosedDocsData()
+	slog.Info(fmt.Sprintf("=====Load time is %dms",time.Since(t).Milliseconds()))
 	h.Config.CreatDirsIfNeeded()
 }
 
@@ -71,9 +75,10 @@ func (h *LangHandler) loadDocData(mdDocPath string) {
 		slog.Error(err.Error())
 		return
 	}
-	tree := h.parse(content, nil)
-	defer tree.Close()
-	h.Store.LoadData(uri, content, tree.RootNode())
+	trees := h.parse(content, nil)
+	defer trees[0].Close()
+	defer trees[1].Close()
+	h.Store.LoadData(uri, content, trees)
 }
 
 func (h *LangHandler) onDocCreated(uri lsp.DocumentURI, content string) {
@@ -85,15 +90,19 @@ func (h *LangHandler) onDocCreated(uri lsp.DocumentURI, content string) {
 func (h *LangHandler) onDocDeleted(uri lsp.DocumentURI) {
 	docData, ok := h.Store.GetDocMustTree(uri, h.parse)
 	if ok {
-		h.Store.UnloadData(uri, string(docData.Content), docData.Tree.RootNode())
+		h.Store.UnloadData(uri, string(docData.Content), docData.Trees)
 		h.Store.RemoveDoc(uri)
 	}
 }
 func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
-	tree := h.parse(content, nil)
+	trees := h.parse(content, nil)
 	doc := data.Document(content)
 
-	docData := data.NewDocumentData(doc, tree)
+	slog.Info("First main---------------")
+	lsp.PrintTsTree(*trees.GetMainTree().RootNode(), 0, content)
+	slog.Info("Now inline-------------")
+	lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
+	docData := data.NewDocumentData(doc, trees)
 	h.Store.AddUpdateDoc(uri, docData)
 	docData.Headings = h.Store.GetHeadingWithinDataStore(uri, h.parse)
 	h.Store.AddUpdateDoc(uri, docData)
@@ -105,10 +114,15 @@ func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocument
 
 func (h *LangHandler) SetupGrammars() {
 	parser := tree_sitter.NewParser()
-	language := tree_sitter.NewLanguage(tree_sitter_sylmark.Language())
+	language := tree_sitter.NewLanguage(tree_sitter_markdown.Language())
 	parser.SetLanguage(language)
 
+	inlineParser := tree_sitter.NewParser()
+	inlineLanguage := tree_sitter.NewLanguage(tree_sitter_markdown.InlineLanguage())
+	inlineParser.SetLanguage(inlineLanguage)
+
 	h.Parser = parser
+	h.InlineParser = inlineParser
 }
 
 func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position lsp.Position, parse lsp.ParseFunction) (doc data.Document, node *tree_sitter.Node, ok bool) {
@@ -120,14 +134,25 @@ func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position
 	point := lsp.PointFromPosition(position)
 
 	doc = docData.Content
-	node = docData.Tree.RootNode().NamedDescendantForPointRange(point, point)
+	// syltodo handle treees
+	node = docData.Trees.GetMainTree().RootNode().NamedDescendantForPointRange(point, point)
+	if node.Parent().Kind() == "atx_heading" {
+		node = node.Parent()
+		return
+	}
+	if node.Kind() == "inline" || node.Kind() == "paragraph" {
+		node = docData.Trees.GetInlineTree().RootNode().NamedDescendantForPointRange(point, point)
+	}
 
 	ok = true
 	return
 }
 
-func (h *LangHandler) parse(content string, oldTree *tree_sitter.Tree) *tree_sitter.Tree {
-	return h.Parser.Parse([]byte(content), oldTree)
+func (h *LangHandler) parse(content string, oldTrees *lsp.Trees) *lsp.Trees {
+	var trees lsp.Trees
+	trees[0] = h.Parser.Parse([]byte(content), nil)
+	trees[1] = h.InlineParser.Parse([]byte(content), nil)
+	return &trees
 }
 
 func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {

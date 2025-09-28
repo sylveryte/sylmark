@@ -75,9 +75,18 @@ func (s *Store) GetHeadingWithinDataStore(uri lsp.DocumentURI, parse lsp.ParseFu
 	store := NewHeadingStore()
 	docData, ok := s.GetDocMustTree(uri, parse)
 	if ok {
-		lsp.TraverseNodeWith(docData.Tree.RootNode(), func(n *tree_sitter.Node) {
+		lsp.TraverseNodeWith(docData.Trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
 			switch n.Kind() {
-			case "wikilink":
+			case "atx_heading":
+				{
+					link, _ := getHeadingTarget(n, string(docData.Content))
+					store.SetDef(link, lsp.GetRange(n))
+				}
+			}
+		})
+		lsp.TraverseNodeWith(docData.Trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
+			switch n.Kind() {
+			case "wiki_link":
 				{
 					target, ok := GetWikilinkTarget(n, string(docData.Content), uri)
 					if ok {
@@ -86,11 +95,6 @@ func (s *Store) GetHeadingWithinDataStore(uri lsp.DocumentURI, parse lsp.ParseFu
 							store.AddRef(string(target), lsp.GetRange(n))
 						}
 					}
-				}
-			case "heading":
-				{
-					link, _ := getHeadingTarget(n, string(docData.Content))
-					store.SetDef(link, lsp.GetRange(n))
 				}
 			}
 		})

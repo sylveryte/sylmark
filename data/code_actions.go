@@ -19,10 +19,11 @@ func (store *Store) GetCodeActions(uri lsp.DocumentURI, diagnostics []lsp.Diagno
 		return
 	}
 
-	node := doc.Tree.RootNode().NamedDescendantForPointRange(lsp.PointFromPosition(rng.Start), lsp.PointFromPosition(rng.Start))
+	// syltodo handle trees
+	node := doc.Trees.GetMainTree().RootNode().NamedDescendantForPointRange(lsp.PointFromPosition(rng.Start), lsp.PointFromPosition(rng.Start))
 
 	switch node.Kind() {
-	case "wikilink", "wikitarget":
+	case "wiki_link", "link_destination":
 		{
 			target, ok := GetWikilinkTarget(node, string(doc.Content), uri)
 			if !ok {

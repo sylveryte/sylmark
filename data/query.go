@@ -34,7 +34,7 @@ func (store *Store) GetSemanticTokens(uri lsp.DocumentURI, parse lsp.ParseFuncti
 	// these token poistions are relative to last one hence lastLastLine
 	var lastLine uint
 	var lastStart uint
-	lsp.TraverseNodeWith(docData.Tree.RootNode(), func(n *tree_sitter.Node) {
+	lsp.TraverseNodeWith(docData.Trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
 		case "tag":
 			{

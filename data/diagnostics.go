@@ -23,9 +23,44 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 	items = []lsp.Diagnostic{}
 
 	content := string(doc.Content)
-	lsp.TraverseNodeWith(doc.Tree.RootNode(), func(n *tree_sitter.Node) {
+	lsp.TraverseNodeWith(doc.Trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
-		case "wikilink":
+		case "atx_heading":
+			{
+				target, ok := GetWikilinkTarget(n, content, uri)
+				if ok {
+					refs, found := s.GLinkStore.GetRefs(target)
+					headingTarget, _ := getHeadingTarget(n, content)
+					subrefs, subfound := doc.Headings.GetRefs(headingTarget)
+					if found || subfound {
+						if subfound && len(subrefs) > 0 {
+							rng := lsp.GetRange(n)
+							msg := fmt.Sprintf("Referrenced %d+%d=%d times", len(refs), len(subrefs), len(refs)+len(subrefs))
+							if len(refs) == 0 {
+								msg = fmt.Sprintf("Referrenced +%d times", len(subrefs))
+							}
+							items = append(items, lsp.Diagnostic{
+								Range:    &rng,
+								Severity: lsp.DiagnosticSeverityInformation,
+								Message:  msg,
+							})
+						} else if len(refs) > 0 {
+
+							rng := lsp.GetRange(n)
+							items = append(items, lsp.Diagnostic{
+								Range:    &rng,
+								Severity: lsp.DiagnosticSeverityInformation,
+								Message:  fmt.Sprintf("Referrenced %d times", len(refs)),
+							})
+						}
+					}
+				}
+			}
+		}
+	})
+	lsp.TraverseNodeWith(doc.Trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
+		switch n.Kind() {
+		case "wiki_link":
 			{
 				target, ok := GetWikilinkTarget(n, content, uri)
 				if ok {
@@ -63,37 +98,6 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 								Severity: lsp.DiagnosticSeverityInformation,
 								Tags:     []lsp.DiagnosticTag{lsp.DiagnosticTagUnnecessary},
 								Message:  msg,
-							})
-						}
-					}
-				}
-			}
-		case "heading":
-			{
-				target, ok := GetWikilinkTarget(n, content, uri)
-				if ok {
-					refs, found := s.GLinkStore.GetRefs(target)
-					headingTarget, _ := getHeadingTarget(n, content)
-					subrefs, subfound := doc.Headings.GetRefs(headingTarget)
-					if found || subfound {
-						if subfound && len(subrefs) > 0 {
-							rng := lsp.GetRange(n)
-							msg := fmt.Sprintf("Referrenced %d+%d=%d times", len(refs), len(subrefs), len(refs)+len(subrefs))
-							if len(refs) == 0 {
-								msg = fmt.Sprintf("Referrenced +%d times", len(subrefs))
-							}
-							items = append(items, lsp.Diagnostic{
-								Range:    &rng,
-								Severity: lsp.DiagnosticSeverityInformation,
-								Message:  msg,
-							})
-						} else if len(refs) > 0 {
-
-							rng := lsp.GetRange(n)
-							items = append(items, lsp.Diagnostic{
-								Range:    &rng,
-								Severity: lsp.DiagnosticSeverityInformation,
-								Message:  fmt.Sprintf("Referrenced %d times", len(refs)),
 							})
 						}
 					}

@@ -10,6 +10,8 @@ require (
 
 require (
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/sylveryte/tree-sitter-markdown v0.0.0-20250924034049-063184969c08 // indirect
+	github.com/yuin/goldmark v1.7.13 // indirect
 	golang.org/x/text v0.9.0 // indirect
 )
 
