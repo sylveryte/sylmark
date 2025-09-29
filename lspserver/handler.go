@@ -46,7 +46,7 @@ func (h *LangHandler) addRootPathAndLoad(dir string) {
 	h.Config.RootPath = dir
 	t := time.Now()
 	h.loadAllClosedDocsData()
-	slog.Info(fmt.Sprintf("=====Load time is %dms",time.Since(t).Milliseconds()))
+	slog.Info(fmt.Sprintf("=====Load time is %dms", time.Since(t).Milliseconds()))
 	h.Config.CreatDirsIfNeeded()
 }
 
@@ -56,26 +56,103 @@ func (h *LangHandler) loadAllClosedDocsData() {
 		return
 	}
 
+	parallels := 25 // 8 seems to give best results
+
+	in := make(chan string, parallels)
+	defer close(in)
+	out := make(chan *TreesContent, parallels)
+	defer close(out)
+
+	// processing goroutines
+	for range parallels {
+		go func() {
+			parsers := getParsers()
+			parse := getParseFunction(parsers)
+			for mdFilePath := range in {
+				uri, content, trees, err := TreesFromMdDocPath(mdFilePath, parse)
+				if err != nil {
+					slog.Error("Some error while parsing " + err.Error())
+					out <- &TreesContent{
+						uri:     uri,
+						content: content,
+						trees:   nil,
+						ok:      false,
+					}
+					continue
+				}
+				out <- &TreesContent{
+					uri:     uri,
+					content: content,
+					trees:   trees,
+					ok:      true,
+				}
+			}
+			parsers[0].Close()
+			parsers[1].Close()
+		}()
+	}
+
+	// input prepare
+	var inputPaths []string
 	filepath.WalkDir(h.Config.RootPath, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() && (strings.HasSuffix(path, ".git") || strings.HasSuffix(path, "node_modules")) {
 			return filepath.SkipDir
 		}
 		if !d.IsDir() && strings.HasSuffix(path, ".md") {
-			h.loadDocData(path)
+			inputPaths = append(inputPaths, path)
 		}
 		return nil
 	})
+
+	// input goroutine
+	go func() {
+		for _, path := range inputPaths {
+			in <- path
+		}
+	}()
+
+	// collect out goroutine
+	total := len(inputPaths)
+	for val := range out {
+		if val.ok {
+			h.Store.LoadData(val.uri, val.content, val.trees)
+			// clean up trees
+			val.trees[0].Close()
+			val.trees[1].Close()
+		} else {
+			slog.Error("Could not process " + string(val.uri.GetFileName()))
+		}
+		total -= 1
+		if total == 0 {
+			break
+		}
+	}
 }
 
-func (h *LangHandler) loadDocData(mdDocPath string) {
-	// using directly ContentFromDocPath to skip caching in store
-	content := data.ContentFromDocPath(mdDocPath)
-	uri, err := data.UriFromPath(mdDocPath)
+type TreesContent struct {
+	ok      bool
+	uri     lsp.DocumentURI
+	content string
+	trees   *lsp.Trees
+}
+
+func TreesFromMdDocPath(mdDocPath string, parse lsp.ParseFunction) (uri lsp.DocumentURI, content string, trees *lsp.Trees, err error) {
+	content = data.ContentFromDocPath(mdDocPath)
+	uri, err = data.UriFromPath(mdDocPath)
 	if err != nil {
 		slog.Error(err.Error())
 		return
 	}
-	trees := h.parse(content, nil)
+	trees = parse(content, nil)
+	return
+}
+
+func (h *LangHandler) loadDocData(mdDocPath string) {
+	uri, content, trees, err := TreesFromMdDocPath(mdDocPath, h.parse)
+	if err != nil {
+		return
+	}
+	// using directly ContentFromDocPath to skip caching in store
 	defer trees[0].Close()
 	defer trees[1].Close()
 	h.Store.LoadData(uri, content, trees)
@@ -98,10 +175,10 @@ func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
 	trees := h.parse(content, nil)
 	doc := data.Document(content)
 
-	slog.Info("First main---------------")
-	lsp.PrintTsTree(*trees.GetMainTree().RootNode(), 0, content)
-	slog.Info("Now inline-------------")
-	lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
+	// slog.Info("First main---------------")
+	// lsp.PrintTsTree(*trees.GetMainTree().RootNode(), 0, content)
+	// slog.Info("Now inline-------------")
+	// lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
 	docData := data.NewDocumentData(doc, trees)
 	h.Store.AddUpdateDoc(uri, docData)
 	docData.Headings = h.Store.GetHeadingWithinDataStore(uri, h.parse)
@@ -112,7 +189,7 @@ func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocument
 	h.Store.SyncChangedDocument(uri, changes, h.parse)
 }
 
-func (h *LangHandler) SetupGrammars() {
+func getParsers() [2]*tree_sitter.Parser {
 	parser := tree_sitter.NewParser()
 	language := tree_sitter.NewLanguage(tree_sitter_markdown.Language())
 	parser.SetLanguage(language)
@@ -121,8 +198,19 @@ func (h *LangHandler) SetupGrammars() {
 	inlineLanguage := tree_sitter.NewLanguage(tree_sitter_markdown.InlineLanguage())
 	inlineParser.SetLanguage(inlineLanguage)
 
-	h.Parser = parser
-	h.InlineParser = inlineParser
+	parsers := [2]*tree_sitter.Parser{
+		parser,
+		inlineParser,
+	}
+
+	return parsers
+}
+
+func (h *LangHandler) SetupGrammars() {
+	parsers := getParsers()
+
+	h.Parser = parsers[0]
+	h.InlineParser = parsers[1]
 }
 
 func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position lsp.Position, parse lsp.ParseFunction) (doc data.Document, node *tree_sitter.Node, ok bool) {
@@ -146,6 +234,15 @@ func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position
 
 	ok = true
 	return
+}
+
+func getParseFunction(parsers [2]*tree_sitter.Parser) lsp.ParseFunction {
+	return func(content string, oldTrees *lsp.Trees) *lsp.Trees {
+		var trees lsp.Trees
+		trees[0] = parsers[0].Parse([]byte(content), nil)
+		trees[1] = parsers[1].Parse([]byte(content), nil)
+		return &trees
+	}
 }
 
 func (h *LangHandler) parse(content string, oldTrees *lsp.Trees) *lsp.Trees {
