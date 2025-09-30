@@ -222,13 +222,12 @@ func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position
 	point := lsp.PointFromPosition(position)
 
 	doc = docData.Content
-	// syltodo handle treees
 	node = docData.Trees.GetMainTree().RootNode().NamedDescendantForPointRange(point, point)
 	if node.Parent().Kind() == "atx_heading" {
 		node = node.Parent()
 		return
 	}
-	if node.Kind() == "inline" || node.Kind() == "paragraph" {
+	if lsp.IsInlineParseNeeded(node) {
 		node = docData.Trees.GetInlineTree().RootNode().NamedDescendantForPointRange(point, point)
 	}
 
@@ -236,6 +235,7 @@ func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position
 	return
 }
 
+// be sure to close the parsers and trees if able
 func getParseFunction(parsers [2]*tree_sitter.Parser) lsp.ParseFunction {
 	return func(content string, oldTrees *lsp.Trees) *lsp.Trees {
 		var trees lsp.Trees
@@ -245,6 +245,7 @@ func getParseFunction(parsers [2]*tree_sitter.Parser) lsp.ParseFunction {
 	}
 }
 
+// update getParseFunction too
 func (h *LangHandler) parse(content string, oldTrees *lsp.Trees) *lsp.Trees {
 	var trees lsp.Trees
 	trees[0] = h.Parser.Parse([]byte(content), nil)

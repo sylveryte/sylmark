@@ -34,7 +34,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 			locs := h.Store.GetTagReferences(tag)
 			return locs, nil
 		}
-	case "wiki_link", "link_destination", "atx_heading", "heading_content":
+	case "wiki_link", "link_destination", "atx_heading", "heading_content", "link_text":
 		{
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
 			if !ok {

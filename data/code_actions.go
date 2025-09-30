@@ -19,8 +19,10 @@ func (store *Store) GetCodeActions(uri lsp.DocumentURI, diagnostics []lsp.Diagno
 		return
 	}
 
-	// syltodo handle trees
 	node := doc.Trees.GetMainTree().RootNode().NamedDescendantForPointRange(lsp.PointFromPosition(rng.Start), lsp.PointFromPosition(rng.Start))
+	if lsp.IsInlineParseNeeded(node) {
+		node = doc.Trees.GetInlineTree().RootNode().NamedDescendantForPointRange(lsp.PointFromPosition(rng.Start), lsp.PointFromPosition(rng.Start))
+	}
 
 	switch node.Kind() {
 	case "wiki_link", "link_destination":

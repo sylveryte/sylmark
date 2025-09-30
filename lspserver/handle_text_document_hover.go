@@ -44,7 +44,7 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 				slog.Warn("Wikilink definition not found" + string(target))
 			}
 		}
-	case "wiki_link", "link_destination":
+	case "wiki_link", "link_destination", "link_text":
 		{
 
 			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)

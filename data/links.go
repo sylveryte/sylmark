@@ -71,6 +71,9 @@ func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bo
 func GetWikilinkTarget(node *tree_sitter.Node, content string, uri lsp.DocumentURI) (target GTarget, ok bool) {
 
 	var link string
+	if node.Kind() == "link_text" {
+		node = node.Parent()
+	}
 	if node.Kind() == "link_destination" {
 		link = lsp.GetNodeContent(*node, content)
 	} else if node.Kind() == "wiki_link" {

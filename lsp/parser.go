@@ -75,6 +75,10 @@ func TraverseNodeWith(node *tree_sitter.Node, action func(*tree_sitter.Node)) {
 
 }
 
+func IsInlineParseNeeded(node *tree_sitter.Node) bool {
+	return node.Kind() == "inline" || node.Kind() == "paragraph"
+}
+
 func FieldText(parent *tree_sitter.Node, field string, content string) (string, bool) {
 	child := parent.ChildByFieldName(field)
 	if child == nil {
