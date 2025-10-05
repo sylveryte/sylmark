@@ -48,8 +48,11 @@ func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumen
 		// sylopti we can use oldDocData.tree to optimze it but initial try met with some weird issues, wrong tree study and use
 		tree := parse(changes.Text, nil)
 		updatedDocData = *NewDocumentData(doc, tree)
+		// important to update doc first since GetLoadedDataStore fetches it
+		s.AddUpdateDoc(uri, &updatedDocData)
 		updatedDocData.Headings = s.GetLoadedDataStore(uri, parse)
 		updatedDocData.FootNotes = s.GetLoadedFootNotesStore(uri, parse)
+		// finally update with stores
 		s.AddUpdateDoc(uri, &updatedDocData)
 	} else {
 		// sylopti
@@ -72,7 +75,7 @@ func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumen
 func (store *Store) UnloadData(uri lsp.DocumentURI, content string, trees *lsp.Trees) {
 	lsp.TraverseNodeWith(trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
-		case "heading":
+		case "atx_heading":
 			{
 				store.RemoveGTarget(n, uri, &content)
 			}

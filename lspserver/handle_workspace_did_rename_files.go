@@ -18,10 +18,9 @@ func (h *LangHandler) handleWorkspaceDidRenameFiles(_ context.Context, _ *jsonrp
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
-	// syltodo
-	// for _, v := range params.Files {
-	// 	// h.onFileRenamed(v)
-	// }
+	for _, v := range params.Files {
+		h.onDocRenamed(v)
+	}
 
 	return nil, nil
 }

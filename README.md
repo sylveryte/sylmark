@@ -71,14 +71,8 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Tags
   - [x] Wikilinks
   - [x] Headings
-- [x] Dim nonexisting wikilinks
+- [x] Dim unresolved wikilinks
 - [x] Diagnostics
-- [x] Sylgraph
-  - [x] Graph view of all nodes
-    - [x] Files
-    - [x] Links
-    - [x] Tags
-  - [x] Click to open in editor
 - [x] Code actions
   - [x] Created unresolved
     - [x] Update internal data
@@ -93,7 +87,7 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - [/] Inline link (Markdown style links )
   - [x] Any file
   - [x] Images with proper link
-  - [/] Markdown files
+  - [ ] Markdown files
     - [ ] Make proper links in store
     - [ ] References
     - [ ] Hover
@@ -104,7 +98,12 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - [ ] Rename heading across workspace
 - [ ] Rename file changes across workspace
 - [ ] Beter nested tag support
-- [ ] Sylgraph
+- [/] Sylgraph
+  - [x] Graph view of all nodes
+    - [x] Files
+    - [x] Links
+    - [x] Tags
+  - [x] Click to open in editor
   - [ ] Local mode
   - [ ] Graph filters
   - [ ] Color based on groups

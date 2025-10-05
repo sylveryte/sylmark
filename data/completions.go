@@ -50,15 +50,15 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 		wikiCompletions := store.GetWikiCompletions(arg, false, onlyFiles, rng, &params.TextDocument.URI)
 		completions = append(completions, wikiCompletions...)
 	case CompletionInlineLink, CompletionInlineLinkEnd:
-		// markdownslinks syltodo cleanup args for below
-		markdownLinkCompletions := store.GetInlineLinkCompletions(arg, "", rng, &params.TextDocument.URI)
-		completions = append(completions, markdownLinkCompletions...)
+		// inlinedownslinks syltodo cleanup args for below
+		inlinedownLinkCompletions := store.GetInlineLinkCompletions(arg, "", rng, &params.TextDocument.URI)
+		completions = append(completions, inlinedownLinkCompletions...)
 	case CompletionInlineLinkHasText, CompletionInlineLinkEndHasText:
-		// markdownslinks syltodo cleanup args for below
-		markdownLinkCompletions := store.GetInlineLinkCompletions(arg, arg2, rng, &params.TextDocument.URI)
-		completions = append(completions, markdownLinkCompletions...)
+		// inlinedownslinks syltodo cleanup args for below
+		inlinedownLinkCompletions := store.GetInlineLinkCompletions(arg, arg2, rng, &params.TextDocument.URI)
+		completions = append(completions, inlinedownLinkCompletions...)
 	case CompletionFootNote, CompletionFootNoteEnd:
-		// markdownslinks syltodo cleanup args for below
+		// inlinedownslinks syltodo cleanup args for below
 		footNoteCompletions := store.GetFootNoteCompletions(arg, rng, &params.TextDocument.URI)
 		completions = append(completions, footNoteCompletions...)
 	}
@@ -104,9 +104,7 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 		footNote := -1
 		for i := char - 1; i >= 0; i-- {
 			ch := line[i]
-			fmt.Printf("look footnote ======%s=====line[%d=%c]\n", line, i, ch)
 			if ch == '[' {
-				fmt.Println("Mila reee")
 				if !(i > 0 && line[i-1] == '[') {
 					footNote = i
 				}
@@ -115,17 +113,17 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 		}
 
 		// look for (
-		marklink := -1
-		marklinkurlstart := -1
+		inlinelink := -1
+		inlinelinkurlstart := -1
 		for i := char - 1; i > 0; i-- {
 			ch := line[i]
 			if ch == '(' {
-				marklinkurlstart = i
+				inlinelinkurlstart = i
 				if line[i-1] == ']' {
 					// find start
 					for j := i - 2; j >= 0; j-- {
 						if line[j] == '[' {
-							marklink = j
+							inlinelink = j
 							break
 						} else if line[j] == ']' {
 							break
@@ -186,9 +184,15 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 				cend = char
 				kind = CompletionWiki
 			}
-		} else if marklink > -1 {
+		} else if inlinelink > -1 {
 			// find end
-			cstart = marklink
+			cstart = inlinelink
+			cstartArgStart := 1
+			// check if is image then consider ! as well
+			if cstart > 0 && line[cstart-1] == '!' {
+				cstart -= 1
+				cstartArgStart = 2
+			}
 			cend = char
 			kind = CompletionInlineLink
 
@@ -201,9 +205,8 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 					break
 				}
 			}
-			arg2 = line[cstart+1 : marklinkurlstart-1]
+			arg2 = line[cstart+cstartArgStart : inlinelinkurlstart-1]
 			if len(strings.TrimSpace(arg2)) != 0 {
-				// cstart = marklinkurlstart + 1
 				// it's not empty
 				switch kind {
 				case CompletionInlineLink:
@@ -212,7 +215,7 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 					kind = CompletionInlineLinkEndHasText
 				}
 			}
-			arg = line[marklinkurlstart+1 : char]
+			arg = line[inlinelinkurlstart+1 : char]
 		} else if footNote > -1 {
 			cstart = footNote
 			cend = char

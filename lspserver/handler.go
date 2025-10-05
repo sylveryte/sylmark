@@ -53,7 +53,16 @@ func (h *LangHandler) onDocCreated(uri lsp.DocumentURI, content string) {
 	docPath, _ := data.PathFromURI(uri)
 	h.loadDocData(docPath)
 }
+func (h *LangHandler) onDocRenamed(param lsp.FileRename) {
+	docData, ok := h.Store.GetDocMustTree(param.OldUri, h.parse)
+	var content string
+	if ok {
+		content = string(docData.Content)
+	}
+	h.onDocDeleted(param.OldUri)
+	h.onDocCreated(param.NewUri, content)
 
+}
 func (h *LangHandler) onDocDeleted(uri lsp.DocumentURI) {
 	docData, ok := h.Store.GetDocMustTree(uri, h.parse)
 	if ok {
@@ -183,6 +192,6 @@ func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *json
 	case "workspace/symbol":
 		result, err = h.handleWorkspaceSymbol(ctx, conn, req)
 	}
-	slog.Info(fmt.Sprintf("[[%dms]]<==[%s]", time.Since(t).Milliseconds(), req.Method))
+	slog.Info(fmt.Sprintf("%dms<==%s", time.Since(t).Milliseconds(), req.Method))
 	return result, err
 }
