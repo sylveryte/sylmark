@@ -15,16 +15,17 @@ import (
 
 type Document string
 type DocumentData struct {
-	Trees       *lsp.Trees
+	Trees      *lsp.Trees
 	InlineTree *tree_sitter.Tree
 	Content    Document
 	Headings   *HeadingsStore
+	FootNotes  *FootNotesStore
 }
 
 func NewDocumentData(doc Document, trees *lsp.Trees) *DocumentData {
 	return &DocumentData{
 		Content: doc,
-		Trees:    trees,
+		Trees:   trees,
 	}
 }
 

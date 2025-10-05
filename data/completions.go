@@ -18,8 +18,11 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 
 	line := doc.Content.GetLine(params.Position.Line)
 
+	// slog.Info(fmt.Sprintf("%d=%d Line=%s", params.Position.Character, params.CompletionContext.TriggerKind, line))
+
 	// this case where space is not considrered by below code
-	kind, arg, cstart, cend := analyzeTriggerKind(params.Position.Character, line)
+	kind, arg, arg2, cstart, cend := analyzeTriggerKind(params.Position.Character, line)
+	// slog.Info(fmt.Sprintf("Trigge kind is %d", kind))
 	rng := lsp.Range{
 		Start: lsp.Position{
 			Line:      params.Position.Line,
@@ -30,6 +33,7 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 			Character: cend,
 		},
 	}
+	onlyFiles := len(arg) > 0 && arg[0] == ' '
 	arg = strings.TrimSpace(arg)
 
 	// Tags
@@ -39,12 +43,24 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 		completions = append(completions, tagCompletions...)
 	case CompletionWiki:
 		// wiklink
-		wikiCompletions := store.GetWikiCompletions(arg, true, rng, &params.TextDocument.URI)
+		wikiCompletions := store.GetWikiCompletions(arg, true, onlyFiles, rng, &params.TextDocument.URI)
 		completions = append(completions, wikiCompletions...)
 	case CompletionWikiWithEnd:
 		// wiklink
-		wikiCompletions := store.GetWikiCompletions(arg, false, rng, &params.TextDocument.URI)
+		wikiCompletions := store.GetWikiCompletions(arg, false, onlyFiles, rng, &params.TextDocument.URI)
 		completions = append(completions, wikiCompletions...)
+	case CompletionInlineLink, CompletionInlineLinkEnd:
+		// markdownslinks syltodo cleanup args for below
+		markdownLinkCompletions := store.GetInlineLinkCompletions(arg, "", rng, &params.TextDocument.URI)
+		completions = append(completions, markdownLinkCompletions...)
+	case CompletionInlineLinkHasText, CompletionInlineLinkEndHasText:
+		// markdownslinks syltodo cleanup args for below
+		markdownLinkCompletions := store.GetInlineLinkCompletions(arg, arg2, rng, &params.TextDocument.URI)
+		completions = append(completions, markdownLinkCompletions...)
+	case CompletionFootNote, CompletionFootNoteEnd:
+		// markdownslinks syltodo cleanup args for below
+		footNoteCompletions := store.GetFootNoteCompletions(arg, rng, &params.TextDocument.URI)
+		completions = append(completions, footNoteCompletions...)
 	}
 
 	return completions, nil
@@ -53,13 +69,19 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 type CompletionTriggerKind int8
 
 const (
-	CompletionNone        CompletionTriggerKind = 0
-	CompletionTag         CompletionTriggerKind = 1
-	CompletionWiki        CompletionTriggerKind = 2
-	CompletionWikiWithEnd CompletionTriggerKind = 3
+	CompletionNone                 CompletionTriggerKind = 0
+	CompletionTag                  CompletionTriggerKind = 1
+	CompletionWiki                 CompletionTriggerKind = 2
+	CompletionWikiWithEnd          CompletionTriggerKind = 3
+	CompletionInlineLink           CompletionTriggerKind = 4
+	CompletionInlineLinkEnd        CompletionTriggerKind = 5
+	CompletionInlineLinkHasText    CompletionTriggerKind = 6
+	CompletionInlineLinkEndHasText CompletionTriggerKind = 7
+	CompletionFootNote             CompletionTriggerKind = 8
+	CompletionFootNoteEnd          CompletionTriggerKind = 9
 )
 
-func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg string, cstart, cend int) {
+func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg string, arg2 string, cstart, cend int) {
 
 	if len(line) > 0 && char > 0 && char <= len(line) {
 		// note char is 1 indexed
@@ -76,6 +98,42 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 				break
 			}
 			i--
+		}
+
+		// loof for [
+		footNote := -1
+		for i := char - 1; i >= 0; i-- {
+			ch := line[i]
+			fmt.Printf("look footnote ======%s=====line[%d=%c]\n", line, i, ch)
+			if ch == '[' {
+				fmt.Println("Mila reee")
+				if !(i > 0 && line[i-1] == '[') {
+					footNote = i
+				}
+				break
+			}
+		}
+
+		// look for (
+		marklink := -1
+		marklinkurlstart := -1
+		for i := char - 1; i > 0; i-- {
+			ch := line[i]
+			if ch == '(' {
+				marklinkurlstart = i
+				if line[i-1] == ']' {
+					// find start
+					for j := i - 2; j >= 0; j-- {
+						if line[j] == '[' {
+							marklink = j
+							break
+						} else if line[j] == ']' {
+							break
+						}
+					}
+				}
+				break
+			}
 		}
 
 		// look for [[, stop if ]] is seen
@@ -101,7 +159,7 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 			cend = char
 			kind = CompletionTag
 		} else if wikistart > -1 {
-			if wikistart+1 < char {
+			if wikistart+1 <= char {
 				wikiend := char
 				wikiendWord := char
 				for wikiend < len(line) {
@@ -128,6 +186,47 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 				cend = char
 				kind = CompletionWiki
 			}
+		} else if marklink > -1 {
+			// find end
+			cstart = marklink
+			cend = char
+			kind = CompletionInlineLink
+
+			// look for closing )
+			for i := char; i < len(line); i++ {
+				if line[i] == ')' {
+					cend = i + 1
+					kind = CompletionInlineLinkEnd
+				} else if line[i] == '[' || line[i] == ']' {
+					break
+				}
+			}
+			arg2 = line[cstart+1 : marklinkurlstart-1]
+			if len(strings.TrimSpace(arg2)) != 0 {
+				// cstart = marklinkurlstart + 1
+				// it's not empty
+				switch kind {
+				case CompletionInlineLink:
+					kind = CompletionInlineLinkHasText
+				case CompletionInlineLinkEnd:
+					kind = CompletionInlineLinkEndHasText
+				}
+			}
+			arg = line[marklinkurlstart+1 : char]
+		} else if footNote > -1 {
+			cstart = footNote
+			cend = char
+			kind = CompletionFootNote
+			arg = line[footNote+1 : char]
+			for i := char; i < len(line); i++ {
+				if line[i] == ']' {
+					cend = i + 1
+					kind = CompletionFootNoteEnd
+				} else if line[i] == '[' || line[i] == '(' || line[i] == ')' {
+					break
+				}
+			}
+
 		}
 
 	}

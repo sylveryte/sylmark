@@ -25,9 +25,11 @@ func (h *LangHandler) handleTextDocumentDidChange(ctx context.Context, _ *jsonrp
 	// rawUri := params.TextDocument.URI
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
+	// t := time.Now()
 	for _, c := range changes {
 		h.onDocChanged(params.TextDocument.URI, c)
 	}
+	// slog.Info(fmt.Sprintf("=====>text change [[%dms]]<=====", time.Since(t).Milliseconds()))
 
 	// go h.ShowMessage(lsp.MessageTypeLog, "Changed")
 	// slog.Info("handleTextDocumentDidChange uri=" + string(rawUri))

@@ -73,8 +73,6 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] Headings
 - [x] Dim nonexisting wikilinks
 - [x] Diagnostics
-  - [ ] Publish after textchange to update references
-  - [ ] Publish after new file created (via code action)
 - [x] Sylgraph
   - [x] Graph view of all nodes
     - [x] Files
@@ -91,14 +89,25 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
   - [x] References
 - [x] Symbols
   - [x] Dynamic workspace symbols
-- [ ] Markdown style links
-- [ ] Nested tag support
+- [x] Switch to official Treesitter markdown parsers
+- [/] Inline link (Markdown style links )
+  - [x] Any file
+  - [x] Images with proper link
+  - [/] Markdown files
+    - [ ] Make proper links in store
+    - [ ] References
+    - [ ] Hover
+    - [ ] Definitions
+    - [ ] Interoperability with wikilinks
+    - [ ] Subheadings
+- [x] Footnotes
+- [ ] Rename heading across workspace
+- [ ] Rename file changes across workspace
+- [ ] Beter nested tag support
 - [ ] Sylgraph
   - [ ] Local mode
   - [ ] Graph filters
   - [ ] Color based on groups
-- [ ] Markdown links Any File
-- [ ] Rename heading across workspace
 
 ## Entities
 

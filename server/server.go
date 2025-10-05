@@ -52,7 +52,6 @@ func (s *Server) StartAndListen() error {
 	r.Get("/*", fsHandler.ServeHTTP)
 	port := "7462"
 	slog.Info("Staring server at " + port)
-	slog.Info("Opening external")
 	go http.ListenAndServe(":"+port, r)
 	s.showDocument(lsp.DocumentURI("http://localhost:"+port), true, lsp.Range{})
 	return nil

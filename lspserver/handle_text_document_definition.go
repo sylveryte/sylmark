@@ -34,29 +34,67 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 			locs := h.Store.GetTagReferences(tag)
 			return locs, nil
 		}
-	case "wiki_link", "link_destination","link_text":
+	case "wiki_link", "link_destination", "link_text", "shortcut_link", "inline_link":
 		{
-			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
-			if ok {
-				isSubheading := len(target) > 0 && target[0] == '#'
-				if isSubheading {
-					doc, ok := h.Store.GetDoc(params.TextDocument.URI)
-					if ok {
-
-						rng, ok := doc.Headings.GetDef(string(target))
-						if ok {
-							return lsp.Location{
-								URI:   params.TextDocument.URI,
-								Range: rng,
-							}, nil
-						}
+			parentedNode := lsp.GetParentalKind(node)
+			switch parentedNode.Kind() {
+			case "shortcut_link":
+				doc, ok := h.Store.GetDoc(params.TextDocument.URI)
+				if ok {
+					linkTextNode := parentedNode.NamedChild(0)
+					linkText := lsp.GetNodeContent(*linkTextNode, string(doc.Content))
+					ref, ok := doc.FootNotes.GetFootNote(linkText)
+					if ok && ref.Def != nil {
+						return lsp.Location{
+							URI:   params.TextDocument.URI,
+							Range: *ref.Def,
+						}, nil
 					}
-
-				} else {
-					return h.Store.GetGTargetDefinition(target), nil
 				}
-			} else {
-				slog.Warn("Wikilink definition not found" + string(target))
+			case "inline_link":
+				filePath, err := data.GetInlineLinkTarget(parentedNode, string(doc), params.TextDocument.URI)
+				if err != nil {
+					slog.Error("File doesnt exist")
+					return nil, nil
+				}
+				fullFilePath, err := data.GetFullPathRelatedTo(params.TextDocument.URI, filePath)
+				if err != nil {
+					slog.Error("Fialed to get full path" + err.Error())
+					return nil, nil
+				}
+				uri, err := data.UriFromPath(fullFilePath)
+				if err != nil {
+					slog.Error("Failed to make uri " + err.Error())
+					return nil, nil
+				}
+				return lsp.Location{
+					URI:   uri,
+					Range: lsp.Range{},
+				}, nil
+
+			case "wiki_link":
+				target, ok := data.GetWikilinkTarget(parentedNode, string(doc), params.TextDocument.URI)
+				if ok {
+					isSubheading := len(target) > 0 && target[0] == '#'
+					if isSubheading {
+						doc, ok := h.Store.GetDoc(params.TextDocument.URI)
+						if ok {
+
+							rng, ok := doc.Headings.GetDef(string(target))
+							if ok {
+								return lsp.Location{
+									URI:   params.TextDocument.URI,
+									Range: rng,
+								}, nil
+							}
+						}
+
+					} else {
+						return h.Store.GetGTargetDefinition(target), nil
+					}
+				} else {
+					slog.Warn("Wikilink definition not found" + string(target))
+				}
 			}
 		}
 	}

@@ -71,7 +71,8 @@ func (store *HeadingsStore) GetRefs(target string) (rng []lsp.Range, found bool)
 	return
 }
 
-func (s *Store) GetHeadingWithinDataStore(uri lsp.DocumentURI, parse lsp.ParseFunction) *HeadingsStore {
+func (s *Store) GetLoadedDataStore(uri lsp.DocumentURI, parse lsp.ParseFunction) *HeadingsStore {
+
 	store := NewHeadingStore()
 	docData, ok := s.GetDocMustTree(uri, parse)
 	if ok {

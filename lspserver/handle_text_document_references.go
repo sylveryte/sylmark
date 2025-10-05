@@ -27,6 +27,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 		return nil, nil
 	}
 
+	var locs []lsp.Location
 	switch node.Kind() {
 	case "tag":
 		{
@@ -34,20 +35,19 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 			locs := h.Store.GetTagReferences(tag)
 			return locs, nil
 		}
-	case "wiki_link", "link_destination", "atx_heading", "heading_content", "link_text":
+	case "wiki_link", "link_destination", "atx_heading", "heading_content", "shortcut_link", "link_text", "inline_link":
 		{
-			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
-			if !ok {
-				slog.Warn("No valid gtarget")
-			}
-			var locs []lsp.Location
-			withinTarget, found := target.GetWIthinTarget()
-			if found {
-				docData, ok := h.Store.GetDoc(params.TextDocument.URI)
+			parentedNode := lsp.GetParentalKind(node)
+
+			switch parentedNode.Kind() {
+			case "shortcut_link":
+				doc, ok := h.Store.GetDoc(params.TextDocument.URI)
 				if ok {
-					ranges, found := docData.Headings.GetRefs(string(withinTarget))
-					if found {
-						for _, r := range ranges {
+					linkTextNode := parentedNode.NamedChild(0)
+					linkText := lsp.GetNodeContent(*linkTextNode, string(doc.Content))
+					footNote, ok := doc.FootNotes.GetFootNote(linkText)
+					if ok {
+						for _, r := range footNote.Refs {
 							locs = append(locs, lsp.Location{
 								URI:   params.TextDocument.URI,
 								Range: r,
@@ -55,8 +55,30 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 						}
 					}
 				}
+			case "inline_link":
+				// syltodo add hover if md file link, can look at get definition
+			default:
+				target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
+				if !ok {
+					slog.Warn("No valid gtarget")
+				}
+				withinTarget, found := target.GetWithinTarget()
+				if found {
+					docData, ok := h.Store.GetDoc(params.TextDocument.URI)
+					if ok {
+						ranges, found := docData.Headings.GetRefs(string(withinTarget))
+						if found {
+							for _, r := range ranges {
+								locs = append(locs, lsp.Location{
+									URI:   params.TextDocument.URI,
+									Range: r,
+								})
+							}
+						}
+					}
+				}
+				locs = append(locs, h.Store.GetGTargetReferences(target)...)
 			}
-			locs = append(locs, h.Store.GetGTargetReferences(target)...)
 			if len(locs) > 0 {
 				return locs, nil
 			}

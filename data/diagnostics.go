@@ -35,9 +35,9 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 					if found || subfound {
 						if subfound && len(subrefs) > 0 {
 							rng := lsp.GetRange(n)
-							msg := fmt.Sprintf("Referrenced %d+%d=%d times", len(refs), len(subrefs), len(refs)+len(subrefs))
+							msg := fmt.Sprintf("%d+%d=%d ", len(refs), len(subrefs), len(refs)+len(subrefs))
 							if len(refs) == 0 {
-								msg = fmt.Sprintf("Referrenced +%d times", len(subrefs))
+								msg = fmt.Sprintf("+%d", len(subrefs))
 							}
 							items = append(items, lsp.Diagnostic{
 								Range:    &rng,
@@ -50,7 +50,7 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 							items = append(items, lsp.Diagnostic{
 								Range:    &rng,
 								Severity: lsp.DiagnosticSeverityInformation,
-								Message:  fmt.Sprintf("Referrenced %d times", len(refs)),
+								Message:  fmt.Sprintf("%d", len(refs)),
 							})
 						}
 					}
@@ -85,10 +85,10 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 						if rfound {
 							if len(refs) > 1 {
 
-								msg = fmt.Sprintf("%s referrenced %d times", msg, len(refs))
+								msg = fmt.Sprintf("%s %d ", msg, len(refs))
 							} else {
 
-								msg = fmt.Sprintf("%s referrence ", msg)
+								msg = fmt.Sprintf("%s ", msg)
 							}
 						}
 						if !found {
@@ -110,7 +110,7 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 	if ok {
 		refs, rfound := s.GLinkStore.GetRefs(GTarget(fileTarget))
 		if rfound {
-			msg := fmt.Sprintf("File is referrenced %d times", len(refs))
+			msg := fmt.Sprintf("File %d", len(refs))
 			items = append(items, lsp.Diagnostic{
 				Severity: lsp.DiagnosticSeverityInformation,
 				Message:  msg,

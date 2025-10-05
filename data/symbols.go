@@ -12,6 +12,7 @@ func (s *Store) GetAllSymbols(query string) (symbols []lsp.WorkspaceSymbol) {
 	if len(query) == 0 {
 		return
 	}
+	isFileOnly := query[0] == ' '
 
 	for t, gl := range s.GLinkStore {
 		target := string(t)
@@ -24,10 +25,14 @@ func (s *Store) GetAllSymbols(query string) (symbols []lsp.WorkspaceSymbol) {
 					continue outer
 				}
 				isFile := !strings.ContainsRune(target, '#')
+				if isFileOnly && !isFile {
+					continue
+				}
 				kind := lsp.SymbolKindKey
 				if isFile {
 					kind = lsp.SymbolKindFile
 				}
+
 				symbols = append(symbols, lsp.WorkspaceSymbol{
 					Name:     target,
 					Kind:     kind,

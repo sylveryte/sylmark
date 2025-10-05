@@ -3,6 +3,7 @@ package lspserver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
@@ -44,15 +45,38 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 				slog.Warn("Wikilink definition not found" + string(target))
 			}
 		}
-	case "wiki_link", "link_destination", "link_text":
+	case "wiki_link", "link_destination", "link_text", "shortcut_link", "inline_link":
 		{
 
-			target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
-			if ok {
-				content = h.Store.GetGTargetWikilinkHover(target)
-			} else {
-				slog.Warn("Wikilink definition not found" + string(target))
+			parentedNode := lsp.GetParentalKind(node)
+
+			switch parentedNode.Kind() {
+			case "shortcut_link":
+				doc, ok := h.Store.GetDoc(params.TextDocument.URI)
+				if ok {
+					linkTextNode := parentedNode.NamedChild(0)
+					linkText := lsp.GetNodeContent(*linkTextNode, string(doc.Content))
+					footNote, ok := doc.FootNotes.GetFootNote(linkText)
+					refsText := fmt.Sprintf("%d references found\n", len(footNote.Refs))
+					if ok && footNote.Def != nil {
+						content = footNote.Excert
+					} else {
+						content = "_No definition found._"
+					}
+					content = refsText + content
+				}
+			case "inline_link":
+				// syltodo add hover if md file link, can look at get definition
+
+			case "wiki_link":
+				target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
+				if ok {
+					content = h.Store.GetGTargetWikilinkHover(target)
+				} else {
+					slog.Warn("Wikilink definition not found" + string(target))
+				}
 			}
+
 		}
 	}
 

@@ -86,3 +86,11 @@ func FieldText(parent *tree_sitter.Node, field string, content string) (string, 
 	}
 	return string(content[child.StartByte():child.EndByte()]), true
 }
+
+func GetParentalKind(node *tree_sitter.Node) *tree_sitter.Node {
+	k := node.Kind()
+	if k == "link_destination" || k == "link_text" {
+		return node.Parent()
+	}
+	return node
+}

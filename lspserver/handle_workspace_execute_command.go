@@ -41,8 +41,8 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 				slog.Error("Date is wrong")
 				return nil, nil
 			}
-			fileName := h.Config.GetDateString(date) + ".md"
-			uri, err := h.Config.GetFileURI(fileName, "journal/")
+			fileName := h.Store.Config.GetDateString(date) + ".md"
+			uri, err := h.Store.Config.GetFileURI(fileName, "journal/")
 			h.ShowDocument(uri, false, lsp.Range{})
 		}
 	case "create":
@@ -83,7 +83,7 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 		}
 	case "graph":
 		{
-			server := server.NewServer(&h.Store, &h.Config, h.ShowDocument)
+			server := server.NewServer(&h.Store, &h.Store.Config, h.ShowDocument)
 			go server.StartAndListen()
 		}
 	}

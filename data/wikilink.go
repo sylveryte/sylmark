@@ -24,7 +24,7 @@ func (t GTarget) SplitHeading() (gTarget GTarget, heading string, hasHeading boo
 	}
 	return t, "", false
 }
-func (t GTarget) GetWIthinTarget() (target GTarget, hasHeading bool) {
+func (t GTarget) GetWithinTarget() (target GTarget, hasHeading bool) {
 	ts := string(t)
 	if strings.ContainsRune(ts, '#') {
 		splits := strings.Split(ts, "#")
@@ -124,9 +124,10 @@ func (s *Store) RemoveGTarget(node *tree_sitter.Node, uri lsp.DocumentURI, conte
 	return s.GLinkStore.RemoveDef(gtarget, location)
 }
 
-func (s *Store) GetWikiCompletions(arg string, needEnd bool, rng lsp.Range, uri *lsp.DocumentURI) []lsp.CompletionItem {
+func (s *Store) GetWikiCompletions(arg string, needEnd bool, onlyFiles bool, rng lsp.Range, uri *lsp.DocumentURI) []lsp.CompletionItem {
 	completions := []lsp.CompletionItem{}
 	strppedArg := strings.TrimSpace(arg)
+	argContainsHash := strings.ContainsRune(arg, '#')
 	isWithin := (len(arg) > 0 && arg[0] == '#') || (len(strppedArg) > 0 && strppedArg[0] == '#')
 	if isWithin {
 		doc, ok := s.GetDoc(*uri)
@@ -157,7 +158,7 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, rng lsp.Range, uri 
 	} else {
 		pipeLoc := strings.IndexRune(arg, '|')
 		containsPipe := pipeLoc != -1
-		needConceal := strings.ContainsRune(arg, '#') && containsPipe
+		needConceal := argContainsHash && containsPipe
 		if needConceal {
 			arg = arg[:pipeLoc]
 		}
@@ -185,6 +186,9 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, rng lsp.Range, uri 
 			if isFile {
 				sortText = "b"
 				kind = lsp.FileCompletion
+			}
+			if onlyFiles && !isFile {
+				continue
 			}
 			completions = append(completions, lsp.CompletionItem{
 				Label:    link,
@@ -228,8 +232,10 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, rng lsp.Range, uri 
 		}
 	}
 
-	dateCompletions := s.getDateCompletions(arg, needEnd, rng)
-	completions = append(completions, dateCompletions...)
+	if !argContainsHash {
+		dateCompletions := s.getDateCompletions(arg, needEnd, rng)
+		completions = append(completions, dateCompletions...)
+	}
 
 	return completions
 }
@@ -245,6 +251,7 @@ func (s *Store) GetGTargetHeadingHover(target GTarget) string {
 	refs, _ := s.GLinkStore.GetRefs(target)
 	totalRefs = len(refs)
 	content := fmt.Sprintf("%d references found", totalRefs)
+	// add local file references
 	return content
 }
 
@@ -257,7 +264,7 @@ func (s *Store) GetGTargetWikilinkHover(target GTarget) string {
 
 	defs, found := s.GLinkStore.GetDefs(target)
 	if !found {
-		content = "No definition found."
+		content = "_No definition found._"
 	} else {
 		if len(defs) == 1 {
 			loc := defs[0]

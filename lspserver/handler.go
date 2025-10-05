@@ -3,10 +3,7 @@ package lspserver
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"log/slog"
-	"path/filepath"
-	"strings"
 	"sylmark/data"
 	"sylmark/lsp"
 	"sylmark/utils"
@@ -27,124 +24,17 @@ type LangHandler struct {
 	InlineParser *tree_sitter.Parser
 	Store        data.Store
 	Debouncers   *ServerDebouncers
-	Config       data.Config
 	Connection   *jsonrpc2.Conn
 }
 
 func NewHandler() (hanlder *LangHandler) {
 	return &LangHandler{
-		Store:  data.NewStore(),
-		Config: data.NewConfig(),
+		Store: data.NewStore(),
 		Debouncers: &ServerDebouncers{
 			DocumentDidChange:   utils.NewSylDebouncer(300 * time.Millisecond),
 			SemantickTokensFull: utils.NewSylDebouncer(400 * time.Millisecond),
 		},
 	}
-}
-
-func (h *LangHandler) addRootPathAndLoad(dir string) {
-	h.Config.RootPath = dir
-	t := time.Now()
-	h.loadAllClosedDocsData()
-	slog.Info(fmt.Sprintf("=====Load time is %dms", time.Since(t).Milliseconds()))
-	h.Config.CreatDirsIfNeeded()
-}
-
-func (h *LangHandler) loadAllClosedDocsData() {
-	if h.Config.RootPath == "" {
-		slog.Error("h.rootPath is empty")
-		return
-	}
-
-	parallels := 25 // 8 seems to give best results
-
-	in := make(chan string, parallels)
-	defer close(in)
-	out := make(chan *TreesContent, parallels)
-	defer close(out)
-
-	// processing goroutines
-	for range parallels {
-		go func() {
-			parsers := getParsers()
-			parse := getParseFunction(parsers)
-			for mdFilePath := range in {
-				uri, content, trees, err := TreesFromMdDocPath(mdFilePath, parse)
-				if err != nil {
-					slog.Error("Some error while parsing " + err.Error())
-					out <- &TreesContent{
-						uri:     uri,
-						content: content,
-						trees:   nil,
-						ok:      false,
-					}
-					continue
-				}
-				out <- &TreesContent{
-					uri:     uri,
-					content: content,
-					trees:   trees,
-					ok:      true,
-				}
-			}
-			parsers[0].Close()
-			parsers[1].Close()
-		}()
-	}
-
-	// input prepare
-	var inputPaths []string
-	filepath.WalkDir(h.Config.RootPath, func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() && (strings.HasSuffix(path, ".git") || strings.HasSuffix(path, "node_modules")) {
-			return filepath.SkipDir
-		}
-		if !d.IsDir() && strings.HasSuffix(path, ".md") {
-			inputPaths = append(inputPaths, path)
-		}
-		return nil
-	})
-
-	// input goroutine
-	go func() {
-		for _, path := range inputPaths {
-			in <- path
-		}
-	}()
-
-	// collect out goroutine
-	total := len(inputPaths)
-	for val := range out {
-		if val.ok {
-			h.Store.LoadData(val.uri, val.content, val.trees)
-			// clean up trees
-			val.trees[0].Close()
-			val.trees[1].Close()
-		} else {
-			slog.Error("Could not process " + string(val.uri.GetFileName()))
-		}
-		total -= 1
-		if total == 0 {
-			break
-		}
-	}
-}
-
-type TreesContent struct {
-	ok      bool
-	uri     lsp.DocumentURI
-	content string
-	trees   *lsp.Trees
-}
-
-func TreesFromMdDocPath(mdDocPath string, parse lsp.ParseFunction) (uri lsp.DocumentURI, content string, trees *lsp.Trees, err error) {
-	content = data.ContentFromDocPath(mdDocPath)
-	uri, err = data.UriFromPath(mdDocPath)
-	if err != nil {
-		slog.Error(err.Error())
-		return
-	}
-	trees = parse(content, nil)
-	return
 }
 
 func (h *LangHandler) loadDocData(mdDocPath string) {
@@ -181,7 +71,8 @@ func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
 	// lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
 	docData := data.NewDocumentData(doc, trees)
 	h.Store.AddUpdateDoc(uri, docData)
-	docData.Headings = h.Store.GetHeadingWithinDataStore(uri, h.parse)
+	docData.Headings = h.Store.GetLoadedDataStore(uri, h.parse)
+	docData.FootNotes = h.Store.GetLoadedFootNotesStore(uri, h.parse)
 	h.Store.AddUpdateDoc(uri, docData)
 }
 
@@ -254,44 +145,44 @@ func (h *LangHandler) parse(content string, oldTrees *lsp.Trees) *lsp.Trees {
 }
 
 func (h *LangHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result any, err error) {
-	slog.Info("-------------reqmethod=> " + req.Method)
+	t := time.Now()
 	switch req.Method {
 	case "initialize":
-		return h.handleInitialize(ctx, conn, req)
+		result, err = h.handleInitialize(ctx, conn, req)
 	case "initialized":
-		return
 	case "shutdown":
-		return h.handleShutdown(ctx, conn, req)
+		result, err = h.handleShutdown(ctx, conn, req)
 	case "textDocument/didOpen":
-		return h.handleTextDocumentDidOpen(ctx, conn, req)
+		result, err = h.handleTextDocumentDidOpen(ctx, conn, req)
 	// case "textDocument/didClose":
-	// 	return h.handleTextDocumentDidClose(ctx, conn, req)
+	// 	result,err= h.handleTextDocumentDidClose(ctx, conn, req)
 	case "textDocument/didChange":
-		return h.handleTextDocumentDidChange(ctx, conn, req)
+		result, err = h.handleTextDocumentDidChange(ctx, conn, req)
 	case "textDocument/hover":
-		return h.handleHover(ctx, conn, req)
+		result, err = h.handleHover(ctx, conn, req)
 	case "textDocument/completion":
-		return h.handleTextDocumentCompletion(ctx, conn, req)
+		result, err = h.handleTextDocumentCompletion(ctx, conn, req)
 	case "textDocument/references":
-		return h.handleTextDocumentReferences(ctx, conn, req)
+		result, err = h.handleTextDocumentReferences(ctx, conn, req)
 	case "textDocument/definition":
-		return h.handleTextDocumentDefinition(ctx, conn, req)
+		result, err = h.handleTextDocumentDefinition(ctx, conn, req)
 	case "textDocument/semanticTokens/full":
-		return h.handleTextDocumentSemanticTokensFull(ctx, conn, req)
+		result, err = h.handleTextDocumentSemanticTokensFull(ctx, conn, req)
 	case "textDocument/codeAction":
-		return h.handleCodeAction(ctx, conn, req)
+		result, err = h.handleCodeAction(ctx, conn, req)
 	case "textDocument/diagnostic":
-		return h.handleDiagnostics(ctx, conn, req)
+		result, err = h.handleDiagnostics(ctx, conn, req)
 	case "workspace/executeCommand":
-		return h.handleWorkspaceExecuteCommand(ctx, conn, req)
+		result, err = h.handleWorkspaceExecuteCommand(ctx, conn, req)
 	case "workspace/didDeleteFiles":
-		return h.handleWorkspaceDidDeleteFiles(ctx, conn, req)
+		result, err = h.handleWorkspaceDidDeleteFiles(ctx, conn, req)
 	case "workspace/didCreateFiles":
-		return h.handleWorkspaceDidCreateFiles(ctx, conn, req)
+		result, err = h.handleWorkspaceDidCreateFiles(ctx, conn, req)
 	case "workspace/didRenameFiles":
-		return h.handleWorkspaceDidRenameFiles(ctx, conn, req)
+		result, err = h.handleWorkspaceDidRenameFiles(ctx, conn, req)
 	case "workspace/symbol":
-		return h.handleWorkspaceSymbol(ctx, conn, req)
+		result, err = h.handleWorkspaceSymbol(ctx, conn, req)
 	}
-	return nil, nil
+	slog.Info(fmt.Sprintf("[[%dms]]<==[%s]", time.Since(t).Milliseconds(), req.Method))
+	return result, err
 }

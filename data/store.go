@@ -15,6 +15,9 @@ type Store struct {
 	DateStore     DateStore
 	LastOpenedDoc lsp.DocumentURI
 	ExcerptLength int16
+	Config        Config
+	MdFiles       []string
+	OtherFiles    []string
 }
 
 func NewStore() Store {
@@ -23,6 +26,9 @@ func NewStore() Store {
 		GLinkStore:    NewGlinkStore(),
 		DocStore:      NewDocumentStore(),
 		DateStore:     NewDateStore(),
+		MdFiles:       []string{},
+		OtherFiles:    []string{},
+		Config:        NewConfig(),
 		ExcerptLength: 10,
 	}
 }
@@ -42,7 +48,8 @@ func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumen
 		// sylopti we can use oldDocData.tree to optimze it but initial try met with some weird issues, wrong tree study and use
 		tree := parse(changes.Text, nil)
 		updatedDocData = *NewDocumentData(doc, tree)
-		updatedDocData.Headings = s.GetHeadingWithinDataStore(uri, parse)
+		updatedDocData.Headings = s.GetLoadedDataStore(uri, parse)
+		updatedDocData.FootNotes = s.GetLoadedFootNotesStore(uri, parse)
 		s.AddUpdateDoc(uri, &updatedDocData)
 	} else {
 		// sylopti

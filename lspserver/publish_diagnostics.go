@@ -7,7 +7,7 @@ import (
 )
 
 func (h *LangHandler) PublishDiagnostics(ctx context.Context, uri lsp.DocumentURI) {
-	slog.Info("Seding uri=" + string(uri))
+	slog.Info("Publishing uri=" + string(uri))
 	h.Connection.Notify(
 		context.Background(),
 		"textDocument/publishDiagnostics",
