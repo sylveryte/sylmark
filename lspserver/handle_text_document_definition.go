@@ -90,10 +90,24 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 						}
 
 					} else {
-						return h.Store.GetGTargetDefinition(target), nil
+						defs := h.Store.GetGTargetDefinition(target)
+
+						if len(defs) == 0 {
+							// file doesn't exists create uri and open it
+							fileName, _, _ := target.GetFileName()
+							newURI, err := data.GetFileURIInSameURIPath(fileName, params.TextDocument.URI)
+							if err != nil {
+								return defs, err
+							}
+							defs = append(defs, lsp.Location{
+								URI: newURI,
+							})
+						}
+
+						return defs, nil
 					}
 				} else {
-					slog.Warn("Wikilink definition not found" + string(target))
+					slog.Warn("No Target detected = " + string(target))
 				}
 			}
 		}

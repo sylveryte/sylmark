@@ -71,18 +71,7 @@ func (h *LangHandler) onDocDeleted(uri lsp.DocumentURI) {
 	}
 }
 func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
-	trees := h.parse(content, nil)
-	doc := data.Document(content)
-
-	// slog.Info("First main---------------")
-	// lsp.PrintTsTree(*trees.GetMainTree().RootNode(), 0, content)
-	// slog.Info("Now inline-------------")
-	// lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
-	docData := data.NewDocumentData(doc, trees)
-	h.Store.AddUpdateDoc(uri, docData)
-	docData.Headings = h.Store.GetLoadedDataStore(uri, h.parse)
-	docData.FootNotes = h.Store.GetLoadedFootNotesStore(uri, h.parse)
-	h.Store.AddUpdateDoc(uri, docData)
+	h.Store.UpdateAndReloadDoc(uri, content, h.parse)
 }
 
 func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocumentContentChangeEvent) {

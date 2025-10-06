@@ -97,7 +97,7 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - [x] Footnotes
 - [ ] Rename heading across workspace
 - [ ] Rename file changes across workspace
-- [ ] Beter nested tag support
+- [ ] Better nested tag support
 - [/] Sylgraph
   - [x] Graph view of all nodes
     - [x] Files

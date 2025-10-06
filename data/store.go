@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sylmark/lsp"
+	"time"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
@@ -37,39 +38,34 @@ func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumen
 
 	var updatedDocData, oldDocData DocumentData
 	// update data into openedDocs
-	if changes.RangeLength == 0 {
-		doc := Document(changes.Text)
-		staleDoc, ok := s.GetDocMustTree(uri, parse)
-		oldDocData = staleDoc
-		if !ok {
-			slog.Error("Failed to get old file" + string(uri))
-			return
-		}
-		// sylopti we can use oldDocData.tree to optimze it but initial try met with some weird issues, wrong tree study and use
-		tree := parse(changes.Text, nil)
-		updatedDocData = *NewDocumentData(doc, tree)
-		// important to update doc first since GetLoadedDataStore fetches it
-		s.AddUpdateDoc(uri, &updatedDocData)
-		updatedDocData.Headings = s.GetLoadedDataStore(uri, parse)
-		updatedDocData.FootNotes = s.GetLoadedFootNotesStore(uri, parse)
-		// finally update with stores
-		s.AddUpdateDoc(uri, &updatedDocData)
-	} else {
-		// sylopti
-		// TextDocumentSync is set to TDSKFull so this case won't be there but in future let's implment partial for better perf
-		slog.Error("Need to handle partial change text")
-		// return
-		slog.Info("Contents " + changes.Text)
-		slog.Info(fmt.Sprintf("range length %d", changes.RangeLength))
-		slog.Info(fmt.Sprintf(
-			"range start %d end %d",
-			changes.Range.Start.Line,
-			changes.Range.End.Line,
-		))
+	doc := Document(changes.Text)
+	staleDoc, ok := s.GetDocMustTree(uri, parse)
+	oldDocData = staleDoc
+	if !ok {
+		slog.Error("Failed to get old file" + string(uri))
+		return
 	}
-
+	updatedDocData = *s.UpdateAndReloadDoc(uri, string(doc), parse)
 	s.UnloadData(uri, string(oldDocData.Content), oldDocData.Trees)
 	s.LoadData(uri, string(updatedDocData.Content), updatedDocData.Trees)
+
+	// sylopti this is for lsp.TDSKIncremental
+	// TextDocumentSync is set to TDSKFull so this case won't be there but in future let's implment partial for better perf
+	// slog.Info(fmt.Sprintf("RangeLength changed %d", changes.RangeLength))
+	// slog.Error("Need to handle partial change text")
+	// // return
+	// slog.Info("Contents " + changes.Text)
+	// slog.Info(fmt.Sprintf("range length %d", changes.RangeLength))
+	// slog.Info(fmt.Sprintf(
+	// 	"range line start %d end %d",
+	// 	changes.Range.Start.Line,
+	// 	changes.Range.End.Line,
+	// ))
+	// slog.Info(fmt.Sprintf(
+	// 	"range char start %d end %d",
+	// 	changes.Range.Start.Character,
+	// 	changes.Range.End.Character,
+	// ))
 }
 
 func (store *Store) UnloadData(uri lsp.DocumentURI, content string, trees *lsp.Trees) {
@@ -130,4 +126,27 @@ func (store *Store) LoadData(uri lsp.DocumentURI, content string, trees *lsp.Tre
 			}
 		}
 	})
+}
+
+func (store *Store) UpdateAndReloadDoc(uri lsp.DocumentURI, content string, parse lsp.ParseFunction) *DocumentData {
+	t := time.Now()
+	trees := parse(content, nil)
+	doc := Document(content)
+	slog.Info(fmt.Sprintf("%dms<==parsing time", time.Since(t).Milliseconds()))
+
+	// slog.Info("First main---------------")
+	// lsp.PrintTsTree(*trees.GetMainTree().RootNode(), 0, content)
+	// slog.Info("Now inline-------------")
+	// lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
+
+	docData := NewDocumentData(doc, trees)
+
+	// important to update doc first since GetLoadedDataStore fetches it
+	store.AddUpdateDoc(uri, docData)
+	docData.Headings = store.GetLoadedDataStore(uri, parse)
+	docData.FootNotes = store.GetLoadedFootNotesStore(uri, parse)
+	// finally update with stores
+	store.AddUpdateDoc(uri, docData)
+
+	return docData
 }

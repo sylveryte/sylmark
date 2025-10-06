@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sylmark/lsp"
 	"time"
 )
@@ -43,8 +44,8 @@ func (c *Config) CheckDirCreateIfNeeded(dir string) (dirPath string, err error) 
 	return dirPath, nil
 }
 
-func (c *Config) GetFileURI(fileName string, dir string) (uri lsp.DocumentURI, error error) {
-	urlPath := fmt.Sprintf("%s/%s%s", c.RootPath, dir, fileName)
+// could be dirInVault = "journal"
+func (c *Config) GetFileURI(fileName string, dirInVault string) (uri lsp.DocumentURI, error error) {
+	urlPath := filepath.Join(c.RootPath, dirInVault, fileName)
 	return UriFromPath(urlPath)
-
 }
