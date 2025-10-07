@@ -283,7 +283,7 @@ func (s *Store) GetGTargetWikilinkHover(target GTarget) string {
 		// references md
 		var refmd string
 		for _, loc := range refs {
-			refmd = fmt.Sprintf("%s1 %s\n", refmd, loc.URI.GetFileName())
+			refmd = fmt.Sprintf("%s- %s\n", refmd, loc.URI.GetFileName())
 		}
 		content = content + "\n---\n" + refmd
 	}

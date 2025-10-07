@@ -86,14 +86,14 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - [x] Switch to official Treesitter markdown parsers
 - [/] Inline link (Markdown style links )
   - [x] Any file
-  - [x] Images with proper link
+  - [x] Images file link include !
   - [ ] Markdown files
     - [ ] Make proper links in store
     - [ ] References
     - [ ] Hover
     - [ ] Definitions
     - [ ] Interoperability with wikilinks
-    - [ ] Subheadings
+    - [ ] Headings
 - [x] Footnotes
 - [ ] Rename heading across workspace
 - [ ] Rename file changes across workspace
@@ -121,3 +121,90 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - Package flow
 
   `main <- handle <- server <- data <- lsp`
+
+### Store
+
+```d2
+vars:{
+  d2-config{
+  layout-engine:elk
+  pad:5
+  }
+}
+s: Store
+gls: "map[GTarget]Glink"{
+
+  style.double-border:true
+
+
+}
+l:Location{
+
+    style.multiple:true}
+t: "map[Tag][]Location"{
+     style.double-border:true
+
+   }
+t->l
+gl:gLink{
+  style.multiple:true
+    "Defs []Location"{
+      style.multiple:true}
+  "Refs []Location"{
+    style.multiple:true}
+}
+
+ds:"map[lsp.DocumentURI]DocumentData"{
+     style.double-border:true
+   }
+#gl."Defs []Location"->d
+ds->dd
+dd:"DocumentData"{
+  style.multiple:true
+    "Trees"{
+      style.multiple:true}
+  Content
+    Headings
+    FootNotes
+}
+fns: "map[string]FootNoteRef"{
+       style.double-border:true
+     }
+fnr:"FootNoteRef"{
+      style.multiple:true
+        "Def *lsp.Range"
+        "Refs [].Range"{
+          style.multiple:true
+        }
+      Excert
+    }
+fns->fnr
+hds:"map[string]Subheading"{
+  style.double-border:true
+}
+shd:"Subheading"{
+      style.multiple:true
+        "Def lsp.Range"
+        "Refs [].Range"{
+          style.multiple:true
+        }
+    }
+hds->shd
+sm:"[]string"{
+          style.multiple:true
+  }
+
+dd.FootNotes->fns
+dd.HeadingsStore->hds
+s:{
+Tags
+GLinkStore
+DocStore
+OtherFiles
+}
+s.Tags -> t
+s.GLinkStore->gls
+gls->gl
+s.DocStore->ds
+s.OtherFiles->sm
+```

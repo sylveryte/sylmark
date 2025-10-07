@@ -9,14 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 	"sylmark/lsp"
-
-	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type Document string
 type DocumentData struct {
 	Trees      *lsp.Trees
-	InlineTree *tree_sitter.Tree
 	Content    Document
 	Headings   *HeadingsStore
 	FootNotes  *FootNotesStore

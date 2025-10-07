@@ -85,9 +85,8 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 						if rfound {
 							if len(refs) > 1 {
 
-								msg = fmt.Sprintf("%s %d ", msg, len(refs))
+								msg = fmt.Sprintf("%s | %d ", msg, len(refs))
 							} else {
-
 								msg = fmt.Sprintf("%s ", msg)
 							}
 						}
