@@ -14,12 +14,28 @@ import (
 func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range, uri *lsp.DocumentURI) []lsp.CompletionItem {
 	isText := len(text) != 0
 	completions := []lsp.CompletionItem{}
+	mdFilesOnly := len(arg) > 1 && arg[0] == ' '
+	otherFilesOnly := mdFilesOnly && len(arg) > 2 && arg[1] == ' '
 	strppedArg := strings.TrimSpace(arg)
 
+	includeMdFiles := !otherFilesOnly
+	includeOtherFiles := !mdFilesOnly
+
 	// md files
-	allFiles := s.OtherFiles
-	allFiles = append(allFiles, s.MdFiles...)
-	for _, path := range s.OtherFiles {
+	var files []string
+	if includeMdFiles {
+		for u := range s.IdStore.uri {
+			f, er := PathFromURI(u)
+			if er != nil {
+				continue
+			}
+			files = append(files, f)
+		}
+	}
+	if includeOtherFiles {
+		files = append(files, s.OtherFiles...)
+	}
+	for _, path := range files {
 		if match := fuzzy.MatchFold(strppedArg, path); match == false {
 			continue
 		}
@@ -103,4 +119,28 @@ func GetFullPathRelatedTo(fullURI lsp.DocumentURI, filePath string) (string, err
 	}
 	return filepath.Join(dir, filePath), nil
 
+}
+
+func GetUriFromInlineNode(inlineNode *tree_sitter.Node, content string, relUri lsp.DocumentURI) (lsp.DocumentURI, bool) {
+
+	filePath, err := GetInlineLinkTarget(inlineNode, content, relUri)
+	if err != nil {
+		slog.Error("File doesnt exist")
+		return "", false
+	}
+	fullFilePath, err := GetFullPathRelatedTo(relUri, filePath)
+	if err != nil {
+		slog.Error("Fialed to get full path" + err.Error())
+		return "", false
+	}
+	uri, err := UriFromPath(fullFilePath)
+	if err != nil {
+		slog.Error("Failed to make uri " + err.Error())
+		return "", false
+	}
+	return uri, true
+}
+
+func IsMdFile(path string) bool {
+	return strings.HasSuffix(path, ".md")
 }

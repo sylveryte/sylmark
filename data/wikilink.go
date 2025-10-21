@@ -7,130 +7,65 @@ import (
 	"sylmark/lsp"
 
 	"github.com/lithammer/fuzzysearch/fuzzy"
-	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-type GTarget string
-type GTargetAndLoc struct {
-	target GTarget
-	loc    *lsp.Location
+type SubTargetAndRanges struct {
+	subTarget SubTarget
+	rng       *lsp.Range
+}
+type FullTargetAndLoc struct {
+	FullTarget FullTarget
+	rng        *lsp.Range
 }
 
-func (t GTarget) SplitHeading() (gTarget GTarget, heading string, hasHeading bool) {
-	ts := string(t)
-	if strings.ContainsRune(ts, '#') {
-		splits := strings.Split(ts, "#")
-		return GTarget(splits[0]), "# " + splits[1], true
-	}
-	return t, "", false
-}
-func (t GTarget) GetWithinTarget() (target GTarget, hasHeading bool) {
-	ts := string(t)
-	if strings.ContainsRune(ts, '#') {
-		splits := strings.Split(ts, "#")
-		return GTarget("#" + splits[1]), true
-	}
-	return "", false
-}
-
-func (t GTarget) GetFileName() (fileName string, heading string, hasHeading bool) {
-	t.SplitHeading()
-	fileTarget, heading, hasHeading := t.SplitHeading()
-	if hasHeading {
-		return fileTarget.GetFileName()
-	} else {
-		return string(t) + ".md", "", false
-	}
-}
-
-func GetFileGTarget(uri lsp.DocumentURI) (gtarget string, ok bool) {
+func GetTarget(uri lsp.DocumentURI) (target Target, ok bool) {
 
 	filename := uri.GetFileName()
 	splits := strings.Split(filename, ".md")
 	if len(splits) < 1 {
+		slog.Error("File not md " + string(uri))
 		return "", false
 	}
-	return splits[0], true
+	return Target(splits[0]), true
 }
-func getGTarget(heading string, uri lsp.DocumentURI) (gtarget GTarget, ok bool) {
 
-	fileGtTarget, ok := GetFileGTarget(uri)
-	if ok {
-		if len(heading) > 0 {
-			return GTarget(fileGtTarget + "#" + heading), true
-		} else {
-			return GTarget(fileGtTarget), true
-		}
-	} else {
+// target path is relative to workspace
+func (s *Store) GetVaultTarget(uri lsp.DocumentURI) (target Target, ok bool) {
+	relPath, err := s.GetPathRelRoot(uri)
+	if err != nil {
+		slog.Error("Failed to get path from " + err.Error())
 		return "", false
 	}
+	// getting rid of .md
+	target = Target(relPath[:len(relPath)-3])
+	return target, true
 }
 
-func (s *Store) AddFileGTarget(uri lsp.DocumentURI) bool {
-
-	gtarget, ok := getGTarget("", uri)
-	if !ok {
-		slog.Error("Could not form gtarget")
-		return false
+// sucess upTarget or same => ok
+func GetOneUpTarget(vaultTarget Target) (target Target, ok bool) {
+	splits := strings.Split(string(vaultTarget), "/")
+	sl := len(splits)
+	if sl > 1 {
+		return Target(strings.Join([]string{splits[sl-2], splits[sl-1]}, "/")), true
 	}
-
-	location := uri.LocationOfFile()
-
-	return s.GLinkStore.AddDef(gtarget, location)
+	return vaultTarget, false
+}
+func GetPlainTarget(vaultTarget Target) (target Target, ok bool) {
+	splits := strings.Split(string(vaultTarget), "/")
+	sl := len(splits)
+	if sl > 0 {
+		return Target(splits[sl-1]), true
+	}
+	return vaultTarget, false
 }
 
-// returns ok
-// adds full target
-func (s *Store) AddGTarget(node *tree_sitter.Node, uri lsp.DocumentURI, content *string) bool {
-	if s == nil {
-		return false
-	}
-
-	heading, ok := getHeadingTitle(node, *content)
-	if !ok {
-		// slog.Error("AddGTarget Could not extract heading")
-		return false
-	}
-	gtarget, ok := getGTarget(heading, uri)
-	if !ok {
-		slog.Error("Could not form gtarget")
-		return false
-	}
-
-	location := uri.LocationOf(node)
-
-	return s.GLinkStore.AddDef(gtarget, location)
-}
-
-// returns ok
-func (s *Store) RemoveGTarget(node *tree_sitter.Node, uri lsp.DocumentURI, content *string) bool {
-	if s == nil {
-		return false
-	}
-
-	heading, ok := getHeadingTitle(node, *content)
-	if !ok {
-		slog.Error("RemoveGTarget Could not extract heading")
-		return false
-	}
-	gtarget, ok := getGTarget(heading, uri)
-	if !ok {
-		slog.Error("Could not form gtarget")
-		return false
-	}
-
-	location := uri.LocationOf(node)
-
-	return s.GLinkStore.RemoveDef(gtarget, location)
-}
-
-func (s *Store) GetWikiCompletions(arg string, needEnd bool, onlyFiles bool, rng lsp.Range, uri *lsp.DocumentURI) []lsp.CompletionItem {
+func (s *Store) GetWikiCompletions(arg string, needEnd bool, onlyFiles bool, rng lsp.Range, id Id) []lsp.CompletionItem {
 	completions := []lsp.CompletionItem{}
 	strppedArg := strings.TrimSpace(arg)
 	argContainsHash := strings.ContainsRune(arg, '#')
 	isWithin := (len(arg) > 0 && arg[0] == '#') || (len(strppedArg) > 0 && strppedArg[0] == '#')
 	if isWithin {
-		doc, ok := s.GetDoc(*uri)
+		doc, ok := s.GetDoc(id)
 		if ok && doc.Trees != nil {
 			headings := GetHeadings(&doc)
 			for _, target := range headings {
@@ -162,71 +97,62 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, onlyFiles bool, rng
 		if needConceal {
 			arg = arg[:pipeLoc]
 		}
-		for _, t := range s.GLinkStore.GetTargets() {
 
-			target := string(t.target)
-			match := fuzzy.MatchFold(arg, target)
-			if match == false {
+		for target, ids := range s.TargetStore {
+			match := fuzzy.MatchFold(arg, string(target))
+			if match {
+				// add file
+				var link string
+				if needEnd {
+					link = fmt.Sprintf("[[%s]]", target)
+				} else {
+					link = fmt.Sprintf("[[%s", target)
+				}
+				completions = append(completions, lsp.CompletionItem{
+					Label:    string(target),
+					Kind:     lsp.FileCompletion,
+					SortText: "b",
+					TextEdit: &lsp.TextEdit{
+						Range:   rng,
+						NewText: link,
+					},
+					Detail: s.GetExcerpt(ids[0], lsp.Range{}),
+				})
+			}
+			if onlyFiles {
 				continue
 			}
-
-			var link string
-			if needEnd {
-				link = "[[" + target + "]]"
-			} else {
-				link = "[[" + target
-			}
-			var excerpt string
-			if t.loc != nil {
-				excerpt = s.GetExcerpt(*t.loc)
-			}
-			isFile := !strings.ContainsRune(link, '#')
-			sortText := "c"
-			kind := lsp.ReferenceCompletion
-			if isFile {
-				sortText = "b"
-				kind = lsp.FileCompletion
-			}
-			if onlyFiles && !isFile {
-				continue
-			}
-			completions = append(completions, lsp.CompletionItem{
-				Label:    link,
-				Kind:     kind,
-				SortText: sortText,
-				TextEdit: &lsp.TextEdit{
-					Range:   rng,
-					NewText: link,
-				},
-				Detail: excerpt,
-			})
-			if needConceal {
-				start := strings.IndexRune(link, '#')
-				end := strings.IndexRune(link, ']')
-				if start >= 0 {
-					var concealerText string
-					if end == -1 {
-						concealerText = link[start+1:]
-					} else {
-
-						concealerText = link[start+1 : end]
+			// add FullTarget
+			for _, id := range ids {
+				subTargets := s.LinkStore.GetSubTargetsAndRanges(id)
+				for _, subTargetNRange := range subTargets {
+					fullTarget := FullTarget(string(target) + string(subTargetNRange.subTarget))
+					match = fuzzy.MatchFold(arg, string(fullTarget))
+					if match {
+						var link string
+						if needConceal {
+							fullTarget = FullTarget(fmt.Sprintf("%s%s|%s", target, subTargetNRange.subTarget, subTargetNRange.subTarget))
+						}
+						if needEnd {
+							link = fmt.Sprintf("[[%s]]", fullTarget)
+						} else {
+							link = fmt.Sprintf("[[%s", fullTarget)
+						}
+						var defRange lsp.Range
+						if subTargetNRange.rng != nil {
+							defRange = *subTargetNRange.rng
+						}
+						completions = append(completions, lsp.CompletionItem{
+							Label:    string(fullTarget),
+							Kind:     lsp.ReferenceCompletion,
+							SortText: "c",
+							TextEdit: &lsp.TextEdit{
+								Range:   rng,
+								NewText: link,
+							},
+							Detail: s.GetExcerpt(id, defRange),
+						})
 					}
-					if needEnd {
-						link = "[[" + target + "|" + concealerText + "]]"
-					} else {
-						link = "[[" + target + "|" + concealerText
-					}
-					completions = append(completions, lsp.CompletionItem{
-						Label:    link,
-						Kind:     kind,
-						SortText: "a",
-						// sylopti can use InsertReplaceEdit  instead of lsp.TextEdit
-						TextEdit: &lsp.TextEdit{
-							Range:   rng,
-							NewText: link,
-						},
-						Detail: excerpt,
-					})
 				}
 			}
 		}
@@ -238,60 +164,4 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, onlyFiles bool, rng
 	}
 
 	return completions
-}
-
-func (s *Store) GetGTargetDefinition(target GTarget) []lsp.Location {
-	locs, _ := s.GLinkStore.GetDefs(target)
-	return locs
-}
-
-func (s *Store) GetGTargetHeadingHover(target GTarget) string {
-	var totalRefs int
-
-	refs, _ := s.GLinkStore.GetRefs(target)
-	totalRefs = len(refs)
-	content := fmt.Sprintf("%d references found", totalRefs)
-	// add local file references
-	return content
-}
-
-func (s *Store) GetGTargetWikilinkHover(target GTarget) string {
-	content := ""
-	refs, found := s.GLinkStore.GetRefs(target)
-	if found {
-		content = fmt.Sprintf("%d references found\n", len(refs)) + content
-	}
-
-	defs, found := s.GLinkStore.GetDefs(target)
-	if !found {
-		content = "_No definition found._"
-	} else {
-		if len(defs) == 1 {
-			loc := defs[0]
-			excerpt := s.GetExcerpt(loc)
-			content = fmt.Sprintf("%s\n---\n%s", content, excerpt)
-		} else if len(defs) > 1 {
-			content = fmt.Sprintf("%d definitions found\n---\n", len(defs))
-			for _, loc := range defs {
-				excerpt := s.GetExcerpt(loc)
-				content = content + fmt.Sprintf("\n%s\n---", excerpt)
-			}
-		}
-
-	}
-	if len(refs) > 0 {
-		// references md
-		var refmd string
-		for _, loc := range refs {
-			refmd = fmt.Sprintf("%s- %s\n", refmd, loc.URI.GetFileName())
-		}
-		content = content + "\n---\n" + refmd
-	}
-
-	return content
-}
-
-func (s *Store) GetGTargetReferences(target GTarget) []lsp.Location {
-	refs, _ := s.GLinkStore.GetRefs(target)
-	return refs
 }

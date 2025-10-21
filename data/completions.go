@@ -7,10 +7,11 @@ import (
 	"sylmark/lsp"
 )
 
-func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.CompletionItem, error) {
+func (s *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.CompletionItem, error) {
 	completions := []lsp.CompletionItem{}
 
-	doc, found := store.GetDoc(params.TextDocument.URI)
+	id := s.GetIdFromURI(params.TextDocument.URI)
+	doc, found := s.GetDoc(id)
 	if !found {
 		slog.Error("not found" + string(params.TextDocument.URI))
 		return completions, fmt.Errorf("Not found")
@@ -18,11 +19,11 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 
 	line := doc.Content.GetLine(params.Position.Line)
 
-	// slog.Info(fmt.Sprintf("%d=%d Line=%s", params.Position.Character, params.CompletionContext.TriggerKind, line))
+	// utils.Sprintf("%d=%d Line=%s", params.Position.Character, params.CompletionContext.TriggerKind, line)
 
 	// this case where space is not considrered by below code
 	kind, arg, arg2, cstart, cend := analyzeTriggerKind(params.Position.Character, line)
-	// slog.Info(fmt.Sprintf("Trigge kind is %d", kind))
+	// utils.Sprintf("Trigge kind is %d", kind)
 	rng := lsp.Range{
 		Start: lsp.Position{
 			Line:      params.Position.Line,
@@ -33,33 +34,37 @@ func (store *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.Completio
 			Character: cend,
 		},
 	}
-	onlyFiles := len(arg) > 0 && arg[0] == ' '
+	oneSpace := len(arg) > 0 && arg[0] == ' '
+	// twoSpace := false
+	// if oneSpace {
+	// 	twoSpace = len(arg) > 1 && arg[1] == ' '
+	// }
 	arg = strings.TrimSpace(arg)
 
 	// Tags
 	switch kind {
 	case CompletionTag:
-		tagCompletions := store.GetTagCompletions(arg, rng)
+		tagCompletions := s.GetTagCompletions(arg, rng)
 		completions = append(completions, tagCompletions...)
 	case CompletionWiki:
 		// wiklink
-		wikiCompletions := store.GetWikiCompletions(arg, true, onlyFiles, rng, &params.TextDocument.URI)
+		wikiCompletions := s.GetWikiCompletions(arg, true, oneSpace, rng, id)
 		completions = append(completions, wikiCompletions...)
 	case CompletionWikiWithEnd:
 		// wiklink
-		wikiCompletions := store.GetWikiCompletions(arg, false, onlyFiles, rng, &params.TextDocument.URI)
+		wikiCompletions := s.GetWikiCompletions(arg, false, oneSpace, rng, id)
 		completions = append(completions, wikiCompletions...)
 	case CompletionInlineLink, CompletionInlineLinkEnd:
 		// inlinedownslinks syltodo cleanup args for below
-		inlinedownLinkCompletions := store.GetInlineLinkCompletions(arg, "", rng, &params.TextDocument.URI)
+		inlinedownLinkCompletions := s.GetInlineLinkCompletions(arg, "", rng, &params.TextDocument.URI)
 		completions = append(completions, inlinedownLinkCompletions...)
 	case CompletionInlineLinkHasText, CompletionInlineLinkEndHasText:
 		// inlinedownslinks syltodo cleanup args for below
-		inlinedownLinkCompletions := store.GetInlineLinkCompletions(arg, arg2, rng, &params.TextDocument.URI)
+		inlinedownLinkCompletions := s.GetInlineLinkCompletions(arg, arg2, rng, &params.TextDocument.URI)
 		completions = append(completions, inlinedownLinkCompletions...)
 	case CompletionFootNote, CompletionFootNoteEnd:
 		// inlinedownslinks syltodo cleanup args for below
-		footNoteCompletions := store.GetFootNoteCompletions(arg, rng, &params.TextDocument.URI)
+		footNoteCompletions := s.GetFootNoteCompletions(arg, rng, id)
 		completions = append(completions, footNoteCompletions...)
 	}
 

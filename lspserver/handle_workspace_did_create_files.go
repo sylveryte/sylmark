@@ -19,7 +19,8 @@ func (h *LangHandler) handleWorkspaceDidCreateFiles(_ context.Context, _ *jsonrp
 		return nil, err
 	}
 	for _, v := range params.Files {
-		h.onDocCreated(v.Uri, "")
+		id := h.Store.GetIdFromURI(v.Uri)
+		h.onDocCreated(id, "")
 	}
 
 	return nil, nil

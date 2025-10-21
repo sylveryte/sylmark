@@ -13,31 +13,56 @@ func (s *Store) GetAllSymbols(query string) (symbols []lsp.WorkspaceSymbol) {
 		return
 	}
 	isFileOnly := query[0] == ' '
+	query = strings.TrimSpace(query)
 
-	for t, gl := range s.GLinkStore {
-		target := string(t)
-
-		if len(gl.Defs) > 0 {
-		outer:
-			for _, loc := range gl.Defs {
-				match := fuzzy.MatchFold(query, loc.URI.GetFileName()+" "+target)
-				if match == false {
-					continue outer
+	for uri, id := range s.IdStore.uri {
+		rootPath, err := s.GetPathRelRoot(uri)
+		if err != nil {
+			continue
+		}
+		match := fuzzy.MatchFold(query, rootPath)
+		if match {
+			var name string
+			target, ok := GetTarget(uri)
+			if ok {
+				name = string(target)
+			} else {
+				name = rootPath
+			}
+			symbols = append(symbols, lsp.WorkspaceSymbol{
+				Name: name,
+				Kind: lsp.SymbolKindFile,
+				Location: lsp.Location{
+					URI:   uri,
+					Range: lsp.Range{},
+				},
+			})
+		}
+		if !isFileOnly {
+			// add subtargets as well
+			for _, st := range s.LinkStore.GetSubTargetsAndRanges(id) {
+				nr := rootPath + "#" + string(st.subTarget)
+				match := fuzzy.MatchFold(query, nr)
+				if match {
+					var name string
+					target, ok := GetTarget(uri)
+					if ok {
+						name = string(target) + "#" + string(st.subTarget)
+					} else {
+						name = nr
+					}
+					if st.rng == nil {
+						continue
+					}
+					symbols = append(symbols, lsp.WorkspaceSymbol{
+						Name: name,
+						Kind: lsp.SymbolKindKey,
+						Location: lsp.Location{
+							URI:   uri,
+							Range: *st.rng,
+						},
+					})
 				}
-				isFile := !strings.ContainsRune(target, '#')
-				if isFileOnly && !isFile {
-					continue
-				}
-				kind := lsp.SymbolKindKey
-				if isFile {
-					kind = lsp.SymbolKindFile
-				}
-
-				symbols = append(symbols, lsp.WorkspaceSymbol{
-					Name:     target,
-					Kind:     kind,
-					Location: loc,
-				})
 			}
 		}
 	}

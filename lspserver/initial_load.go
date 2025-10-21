@@ -1,21 +1,17 @@
 package lspserver
 
 import (
-	"fmt"
 	"io/fs"
 	"log/slog"
 	"path/filepath"
 	"strings"
 	"sylmark/data"
 	"sylmark/lsp"
-	"time"
 )
 
 func (h *LangHandler) addRootPathAndLoad(dir string) {
 	h.Store.Config.RootPath = dir
-	t := time.Now()
 	h.loadAllClosedDocsData()
-	slog.Info(fmt.Sprintf("=====>Initial Load time is [[%dms]]<=====", time.Since(t).Milliseconds()))
 	h.Store.Config.CreatDirsIfNeeded()
 }
 
@@ -25,7 +21,7 @@ func (h *LangHandler) loadAllClosedDocsData() {
 		return
 	}
 
-	parallels := 25 // 8 seems to give best results
+	parallels := 2500
 
 	in := make(chan string, parallels)
 	defer close(in)
@@ -36,9 +32,11 @@ func (h *LangHandler) loadAllClosedDocsData() {
 	for range parallels {
 		go func() {
 			parsers := getParsers()
+			defer parsers[0].Close()
+			defer parsers[1].Close()
 			parse := getParseFunction(parsers)
 			for mdFilePath := range in {
-				uri, content, trees, err := TreesFromMdDocPath(mdFilePath, parse)
+				uri, content, trees, err := TreesFromUri(mdFilePath, parse)
 				if err != nil {
 					slog.Error("Some error while parsing " + err.Error())
 					out <- &TreesContent{
@@ -56,19 +54,19 @@ func (h *LangHandler) loadAllClosedDocsData() {
 					ok:      true,
 				}
 			}
-			parsers[0].Close()
-			parsers[1].Close()
 		}()
 	}
 
+	var mdFiles []string
+
 	// input prepare
 	filepath.WalkDir(h.Store.Config.RootPath, func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() && (strings.HasSuffix(path, ".git") || strings.HasSuffix(path, "node_modules")) {
+		if d.IsDir() && (strings.HasSuffix(path, ".") || strings.HasSuffix(path, "node_modules")) {
 			return filepath.SkipDir
 		}
 		if !d.IsDir() {
-			if strings.HasSuffix(path, ".md") {
-				h.Store.MdFiles = append(h.Store.MdFiles, path)
+			if data.IsMdFile(path) {
+				mdFiles = append(mdFiles, path)
 			} else {
 				h.Store.OtherFiles = append(h.Store.OtherFiles, path)
 			}
@@ -78,21 +76,23 @@ func (h *LangHandler) loadAllClosedDocsData() {
 
 	// input goroutine
 	go func() {
-		for _, path := range h.Store.MdFiles {
+		for _, path := range mdFiles {
 			in <- path
 		}
 	}()
 
 	// collect out goroutine
-	total := len(h.Store.MdFiles)
+	total := len(mdFiles)
 	for val := range out {
 		if val.ok {
-			h.Store.LoadData(val.uri, val.content, val.trees)
+			id := h.Store.GetIdFromURI(val.uri)
+			// utils.Sprintf("jiko id is %d uri was %s", id, val.uri)
+			h.Store.LoadData(id, val.content, val.trees)
 			// clean up trees
 			val.trees[0].Close()
 			val.trees[1].Close()
 		} else {
-			slog.Error("Could not process " + string(val.uri.GetFileName()))
+			slog.Error("Could not process " + string(val.uri))
 		}
 		total -= 1
 		if total == 0 {
@@ -108,7 +108,7 @@ type TreesContent struct {
 	trees   *lsp.Trees
 }
 
-func TreesFromMdDocPath(mdDocPath string, parse lsp.ParseFunction) (uri lsp.DocumentURI, content string, trees *lsp.Trees, err error) {
+func TreesFromUri(mdDocPath string, parse lsp.ParseFunction) (uri lsp.DocumentURI, content string, trees *lsp.Trees, err error) {
 	content = data.ContentFromDocPath(mdDocPath)
 	uri, err = data.UriFromPath(mdDocPath)
 	if err != nil {

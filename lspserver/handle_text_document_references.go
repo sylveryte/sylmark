@@ -3,7 +3,6 @@ package lspserver
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
 
@@ -21,17 +20,22 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 		return nil, err
 	}
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
+	uri := params.TextDocument.URI
+	id := h.Store.GetIdFromURI(uri)
 
-	doc, node, ok := h.DocAndNodeFromURIAndPosition(params.TextDocument.URI, params.Position, h.parse)
+	doc, node, ok := h.DocAndNodeFromURIAndPosition(id, params.Position, h.parse)
+	content := string(doc.Content)
 	if !ok {
-		return nil, nil
+		return
 	}
 
 	var locs []lsp.Location
+	var idLocs []data.IdLocation
+
 	switch node.Kind() {
 	case "tag":
 		{
-			tag := data.GetTag(node, string(doc))
+			tag := data.GetTag(node, content)
 			locs := h.Store.GetTagReferences(tag)
 			return locs, nil
 		}
@@ -41,7 +45,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 
 			switch parentedNode.Kind() {
 			case "shortcut_link":
-				doc, ok := h.Store.GetDoc(params.TextDocument.URI)
+				doc, ok := h.Store.GetDoc(id)
 				if ok {
 					linkTextNode := parentedNode.NamedChild(0)
 					linkText := lsp.GetNodeContent(*linkTextNode, string(doc.Content))
@@ -56,29 +60,50 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 					}
 				}
 			case "inline_link":
-				// syltodo add hover if md file link, can look at get definition
-			default:
-				target, ok := data.GetWikilinkTarget(node, string(doc), params.TextDocument.URI)
-				if !ok {
-					slog.Warn("No valid gtarget")
+			// syltodo
+			case "atx_heading":
+				subTarget, ok := data.GetSubTarget(parentedNode, string(content))
+				if ok {
+					refs, found := h.Store.LinkStore.GetRefs(id, subTarget)
+					subrefs, subfound := doc.Headings.GetRefs(string(subTarget))
+					if subfound {
+						for _, sr := range subrefs {
+							locs = append(locs, lsp.Location{
+								Range: sr,
+								URI:   uri,
+							})
+						}
+					}
+					if found {
+						h.Store.FillInLocations(&locs, &refs)
+					}
 				}
-				withinTarget, found := target.GetWithinTarget()
+			case "wiki_link":
+				target, subTarget, isSubTarget, found := data.GetWikilinkTargets(parentedNode, content)
 				if found {
-					docData, ok := h.Store.GetDoc(params.TextDocument.URI)
-					if ok {
-						ranges, found := docData.Headings.GetRefs(string(withinTarget))
-						if found {
-							for _, r := range ranges {
-								locs = append(locs, lsp.Location{
-									URI:   params.TextDocument.URI,
-									Range: r,
-								})
+					isSubheading := len(target) == 0 && isSubTarget
+					if isSubheading {
+						doc, ok := h.Store.GetDoc(id)
+						if ok {
+							ranges, ok := doc.Headings.GetRefs(string(subTarget))
+							if ok {
+								for _, r := range ranges {
+									locs = append(locs, lsp.Location{
+										URI:   params.TextDocument.URI,
+										Range: r,
+									})
+								}
 							}
+						}
+					} else {
+						lidLocs, refFound := h.Store.GetRefsFromTarget(target, subTarget)
+						if refFound {
+							idLocs = append(idLocs, lidLocs...)
 						}
 					}
 				}
-				locs = append(locs, h.Store.GetGTargetReferences(target)...)
 			}
+			locs = *h.Store.FillInLocations(&locs, &idLocs)
 			if len(locs) > 0 {
 				return locs, nil
 			}
@@ -86,11 +111,8 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 	default:
 		{
 			// get files references
-			target, ok := data.GetFileGTarget(params.TextDocument.URI)
-			if !ok {
-				slog.Warn("No valid gtarget")
-			}
-			locs := h.Store.GetGTargetReferences(data.GTarget(target))
+			lLocs, _ := h.Store.LinkStore.GetRefs(id, "")
+			locs = *h.Store.FillInLocations(&locs, &lLocs)
 			if len(locs) > 0 {
 				return locs, nil
 			}

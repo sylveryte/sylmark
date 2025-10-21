@@ -24,13 +24,13 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
 	}
-	// slog.Info(fmt.Sprintf("Execute the command %s %v ", params.Command, params.Arguments))
+	// utils.Sprintf("Execute the command %s %v ", params.Command, params.Arguments)
 
 	switch params.Command {
 	case "show":
 		{
 			arg := "today"
-			// slog.Info(fmt.Sprintf("Arg is bef %s %d", arg, len(params.Arguments)))
+			// utils.Sprintf("Arg is bef %s %d", arg, len(params.Arguments))
 			if len(params.Arguments) > 0 && len(params.Arguments[0]) > 0 {
 				arg = params.Arguments[0]
 			}
@@ -59,11 +59,13 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 					return nil, nil
 				}
 				// update data
-				h.onDocCreated(uri, "")
+				id := h.Store.GetIdFromURI(uri)
+				h.onDocCreated(id, "")
 			}
 		}
 	case "append":
 		{
+			// syltodo, create file if doesnt exists
 			if len(params.Arguments) > 1 && len(params.Arguments[0]) > 0 {
 				filePath := params.Arguments[0]
 				if heading := params.Arguments[1]; len(heading) > 0 {

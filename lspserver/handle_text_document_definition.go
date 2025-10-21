@@ -22,7 +22,8 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 	}
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
-	doc, node, ok := h.DocAndNodeFromURIAndPosition(params.TextDocument.URI, params.Position, h.parse)
+	id := h.Store.GetIdFromURI(params.TextDocument.URI)
+	doc, node, ok := h.DocAndNodeFromURIAndPosition(id, params.Position, h.parse)
 	if !ok {
 		return nil, nil
 	}
@@ -30,7 +31,7 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 	switch node.Kind() {
 	case "tag":
 		{
-			tag := data.GetTag(node, string(doc))
+			tag := data.GetTag(node, string(doc.Content))
 			locs := h.Store.GetTagReferences(tag)
 			return locs, nil
 		}
@@ -39,7 +40,7 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 			parentedNode := lsp.GetParentalKind(node)
 			switch parentedNode.Kind() {
 			case "shortcut_link":
-				doc, ok := h.Store.GetDoc(params.TextDocument.URI)
+				doc, ok := h.Store.GetDoc(id)
 				if ok {
 					linkTextNode := parentedNode.NamedChild(0)
 					linkText := lsp.GetNodeContent(*linkTextNode, string(doc.Content))
@@ -52,20 +53,11 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 					}
 				}
 			case "inline_link":
-				filePath, err := data.GetInlineLinkTarget(parentedNode, string(doc), params.TextDocument.URI)
-				if err != nil {
-					slog.Error("File doesnt exist")
-					return nil, nil
-				}
-				fullFilePath, err := data.GetFullPathRelatedTo(params.TextDocument.URI, filePath)
-				if err != nil {
-					slog.Error("Fialed to get full path" + err.Error())
-					return nil, nil
-				}
-				uri, err := data.UriFromPath(fullFilePath)
-				if err != nil {
+				uri, ok := data.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
+				if !ok {
 					slog.Error("Failed to make uri " + err.Error())
 					return nil, nil
+
 				}
 				return lsp.Location{
 					URI:   uri,
@@ -73,14 +65,14 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 				}, nil
 
 			case "wiki_link":
-				target, ok := data.GetWikilinkTarget(parentedNode, string(doc), params.TextDocument.URI)
+				target, subTarget, isSubTarget, _ := data.GetWikilinkTargets(parentedNode, string(doc.Content))
 				if ok {
-					isSubheading := len(target) > 0 && target[0] == '#'
+					isSubheading := len(target) == 0 && isSubTarget
 					if isSubheading {
-						doc, ok := h.Store.GetDoc(params.TextDocument.URI)
+						doc, ok := h.Store.GetDoc(id)
 						if ok {
 
-							rng, ok := doc.Headings.GetDef(string(target))
+							rng, ok := doc.Headings.GetDef(string(subTarget))
 							if ok {
 								return lsp.Location{
 									URI:   params.TextDocument.URI,
@@ -90,21 +82,26 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 						}
 
 					} else {
-						defs := h.Store.GetGTargetDefinition(target)
+						// is id even proper?? for subtarget??
+						// check others refs hover
+						locs := []lsp.Location{}
+						defs, found := h.Store.GetDefsFromTarget(target, subTarget)
 
-						if len(defs) == 0 {
+						if !found {
 							// file doesn't exists create uri and open it
-							fileName, _, _ := target.GetFileName()
+							fileName := target.GetFileName()
 							newURI, err := data.GetFileURIInSameURIPath(fileName, params.TextDocument.URI)
 							if err != nil {
 								return defs, err
 							}
-							defs = append(defs, lsp.Location{
+							loc := lsp.Location{
 								URI: newURI,
-							})
+							}
+							return loc, nil
 						}
 
-						return defs, nil
+						locs = *h.Store.FillInLocations(&locs, &defs)
+						return locs, nil
 					}
 				} else {
 					slog.Warn("No Target detected = " + string(target))

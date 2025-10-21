@@ -11,6 +11,9 @@ type DocumentURI string
 func (d DocumentURI) GetFileName() string {
 	return filepath.Base(string(d))
 }
+func GetFileName(path string) string {
+	return filepath.Base(path)
+}
 
 func (d DocumentURI) LocationOfFile() Location {
 	return Location{

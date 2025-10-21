@@ -21,7 +21,8 @@ func (h *LangHandler) handleTextDocumentSemanticTokensFull(_ context.Context, _ 
 	}
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
-	tokens := h.Store.GetSemanticTokens(params.TextDocument.URI, h.parse)
+	id := h.Store.GetIdFromURI(params.TextDocument.URI)
+	tokens := h.Store.GetSemanticTokens(id, h.parse)
 
 	return tokens, nil
 }

@@ -1,152 +1,178 @@
 package data
 
 import (
-	"fmt"
 	"log/slog"
 	"sylmark/lsp"
-	"time"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type Store struct {
 	Tags          map[Tag][]lsp.Location
-	GLinkStore    GLinkStore
+	LinkStore     LinkStore
 	DocStore      DocumentStore
+	TargetStore   TargetStore
+	IdStore       IdStore
 	DateStore     DateStore
 	LastOpenedDoc lsp.DocumentURI
 	ExcerptLength int16
 	Config        Config
-	MdFiles       []string
 	OtherFiles    []string
 }
 
 func NewStore() Store {
 	return Store{
 		Tags:          map[Tag][]lsp.Location{},
-		GLinkStore:    NewGlinkStore(),
+		LinkStore:     NewlinkStore(),
+		TargetStore:   NewTargetStore(),
 		DocStore:      NewDocumentStore(),
 		DateStore:     NewDateStore(),
-		MdFiles:       []string{},
+		IdStore:       NewIdStore(),
 		OtherFiles:    []string{},
 		Config:        NewConfig(),
 		ExcerptLength: 10,
 	}
 }
 
-func (s *Store) SyncChangedDocument(uri lsp.DocumentURI, changes lsp.TextDocumentContentChangeEvent, parse lsp.ParseFunction) {
+func (s *Store) SyncChangedDocument(id Id, changes lsp.TextDocumentContentChangeEvent, parse lsp.ParseFunction) {
 
 	var updatedDocData, oldDocData DocumentData
 	// update data into openedDocs
 	doc := Document(changes.Text)
-	staleDoc, ok := s.GetDocMustTree(uri, parse)
+	staleDoc, ok := s.GetDocMustTree(id, parse)
 	oldDocData = staleDoc
 	if !ok {
-		slog.Error("Failed to get old file" + string(uri))
+		slog.Error("Failed to get old file")
 		return
 	}
-	updatedDocData = *s.UpdateAndReloadDoc(uri, string(doc), parse)
-	s.UnloadData(uri, string(oldDocData.Content), oldDocData.Trees)
-	s.LoadData(uri, string(updatedDocData.Content), updatedDocData.Trees)
+	updatedDocData = *s.UpdateAndReloadDoc(id, string(doc), parse)
+	s.UnloadData(id, string(oldDocData.Content), oldDocData.Trees)
+	s.LoadData(id, string(updatedDocData.Content), updatedDocData.Trees)
 
 	// sylopti this is for lsp.TDSKIncremental
 	// TextDocumentSync is set to TDSKFull so this case won't be there but in future let's implment partial for better perf
-	// slog.Info(fmt.Sprintf("RangeLength changed %d", changes.RangeLength))
+	// utils.Sprintf("RangeLength changed %d", changes.RangeLength)
 	// slog.Error("Need to handle partial change text")
 	// // return
-	// slog.Info("Contents " + changes.Text)
-	// slog.Info(fmt.Sprintf("range length %d", changes.RangeLength))
-	// slog.Info(fmt.Sprintf(
+	// utils.Sprintf(fmt.Sprintf("range length %d", changes.RangeLength)
+	// utils.Sprintf
 	// 	"range line start %d end %d",
 	// 	changes.Range.Start.Line,
 	// 	changes.Range.End.Line,
 	// ))
-	// slog.Info(fmt.Sprintf(
+	// utils.Sprintf
 	// 	"range char start %d end %d",
 	// 	changes.Range.Start.Character,
 	// 	changes.Range.End.Character,
 	// ))
 }
 
-func (store *Store) UnloadData(uri lsp.DocumentURI, content string, trees *lsp.Trees) {
+func (s *Store) UnloadData(id Id, content string, trees *lsp.Trees) {
+	// utils.Sprintf("UnloadData id=%d", id)
+	uri, _ := s.GetUri(id)
 	lsp.TraverseNodeWith(trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
 		case "atx_heading":
 			{
-				store.RemoveGTarget(n, uri, &content)
-			}
-		}
-	})
-	lsp.TraverseNodeWith(trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
-		switch n.Kind() {
-		case "wiki_link":
-			{
-				target, ok := GetWikilinkTarget(n, content, uri)
+				subTarget, ok := GetSubTarget(n, content)
 				if ok {
-					loc := uri.LocationOf(n)
-					store.GLinkStore.RemoveRef(target, loc)
+					s.LinkStore.RemoveDef(id, subTarget, lsp.GetRange(n))
 				}
 			}
-		case "tag":
-			{
-				store.RemoveTag(n, uri, &content)
-			}
 		}
 	})
-}
-
-func (store *Store) LoadData(uri lsp.DocumentURI, content string, trees *lsp.Trees) {
-
-	store.AddFileGTarget(uri)
-	lsp.TraverseNodeWith(trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
-		switch n.Kind() {
-		case "atx_heading":
-			{
-				store.AddGTarget(n, uri, &content)
-			}
-		}
-	})
-
 	lsp.TraverseNodeWith(trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
 		case "wiki_link":
 			{
-				target, ok := GetWikilinkTarget(n, content, uri)
+				target, subTarget, _, ok := GetWikilinkTargets(n, content)
 				if ok {
-					isSubheading := len(target) > 0 && target[0] == '#'
-					if !isSubheading {
-						loc := uri.LocationOf(n)
-						store.GLinkStore.AddRef(target, loc)
+					ids := s.getIds(target)
+					for _, defId := range ids {
+						loc := id.LocationOf(n)
+						s.LinkStore.RemoveRef(defId, subTarget, loc)
 					}
 				}
 			}
 		case "tag":
 			{
-				store.AddTag(n, uri, &content)
+				s.RemoveTag(n, uri, &content)
 			}
 		}
 	})
 }
 
-func (store *Store) UpdateAndReloadDoc(uri lsp.DocumentURI, content string, parse lsp.ParseFunction) *DocumentData {
-	t := time.Now()
+func (s *Store) LoadData(id Id, content string, trees *lsp.Trees) {
+	// utils.Sprintf("LoadData id=%d", id)
+
+	// syltodo
+	uri, _ := s.GetUri(id)
+	// store.AddFileGTarget(uri)
+	lsp.TraverseNodeWith(trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
+		switch n.Kind() {
+		case "atx_heading":
+			{
+				subTarget, ok := GetSubTarget(n, content)
+				if ok {
+					s.LinkStore.AddDef(id, subTarget, lsp.GetRange(n))
+				}
+			}
+		}
+	})
+
+	lsp.TraverseNodeWith(trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
+		switch n.Kind() {
+		case "wiki_link":
+			{
+				target, subTarget, _, ok := GetWikilinkTargets(n, content)
+
+				if ok {
+					isSubheading := len(target) == 0
+					if !isSubheading {
+						defIds := s.getIds(target)
+						for _, defId := range defIds {
+							loc := id.LocationOf(n)
+							s.LinkStore.AddRef(defId, subTarget, loc)
+						}
+					}
+				}
+			}
+		case "tag":
+			{
+				s.AddTag(n, uri, &content)
+			}
+		case "inline_link":
+			slog.Info("Cool inline_link")
+			lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
+			linkUri, ok := GetUriFromInlineNode(n, content, uri)
+
+			if ok && IsMdFile(string(linkUri)) {
+				linkId := s.GetIdFromURI(linkUri)
+				loc := linkId.LocationOf(n)
+				// syltodo add isSubheading logic for # heading support
+				s.LinkStore.AddRef(linkId, "", loc)
+			}
+			// syltodo
+		}
+	})
+}
+
+func (s *Store) UpdateAndReloadDoc(id Id, content string, parse lsp.ParseFunction) *DocumentData {
+	// t := time.Now()
 	trees := parse(content, nil)
 	doc := Document(content)
-	slog.Info(fmt.Sprintf("%dms<==parsing time", time.Since(t).Milliseconds()))
+	// utils.Sprintf("%dms<==parsing time", time.Since(t).Milliseconds())
 
-	// slog.Info("First main---------------")
-	// lsp.PrintTsTree(*trees.GetMainTree().RootNode(), 0, content)
-	// slog.Info("Now inline-------------")
-	// lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
-
+	// utils.Sprintf(*trees.GetMainTree().RootNode(), 0, content
+	// utils.Sprintf(*trees.GetInlineTree().RootNode(), 0, content
 	docData := NewDocumentData(doc, trees)
 
 	// important to update doc first since GetLoadedDataStore fetches it
-	store.AddUpdateDoc(uri, docData)
-	docData.Headings = store.GetLoadedDataStore(uri, parse)
-	docData.FootNotes = store.GetLoadedFootNotesStore(uri, parse)
+	s.AddUpdateDoc(id, docData)
+	docData.Headings = s.GetLoadedDataStore(id, parse)
+	docData.FootNotes = s.GetLoadedFootNotesStore(id, parse)
 	// finally update with stores
-	store.AddUpdateDoc(uri, docData)
+	s.AddUpdateDoc(id, docData)
 
 	return docData
 }

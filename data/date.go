@@ -93,7 +93,7 @@ func getDateCompletion(arg string, date string, needEnd bool, rng lsp.Range) (co
 	comp = lsp.CompletionItem{
 		Label:    label,
 		Kind:     lsp.ValueCompletion,
-		SortText: "a",
+		SortText: "b",
 		TextEdit: &lsp.TextEdit{
 			Range:   rng,
 			NewText: link,

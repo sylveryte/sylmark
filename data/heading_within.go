@@ -71,17 +71,17 @@ func (store *HeadingsStore) GetRefs(target string) (rng []lsp.Range, found bool)
 	return
 }
 
-func (s *Store) GetLoadedDataStore(uri lsp.DocumentURI, parse lsp.ParseFunction) *HeadingsStore {
+func (s *Store) GetLoadedDataStore(id Id, parse lsp.ParseFunction) *HeadingsStore {
 
 	store := NewHeadingStore()
-	docData, ok := s.GetDocMustTree(uri, parse)
+	docData, ok := s.GetDocMustTree(id, parse)
 	if ok {
 		lsp.TraverseNodeWith(docData.Trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
 			switch n.Kind() {
 			case "atx_heading":
 				{
-					link, _ := getHeadingTarget(n, string(docData.Content))
-					store.SetDef(link, lsp.GetRange(n))
+					link, _ := GetSubTarget(n, string(docData.Content))
+					store.SetDef(string(link), lsp.GetRange(n))
 				}
 			}
 		})
@@ -89,11 +89,11 @@ func (s *Store) GetLoadedDataStore(uri lsp.DocumentURI, parse lsp.ParseFunction)
 			switch n.Kind() {
 			case "wiki_link":
 				{
-					target, ok := GetWikilinkTarget(n, string(docData.Content), uri)
+					target, subTarget, isSubTarget, ok := GetWikilinkTargets(n, string(docData.Content))
 					if ok {
-						isSubheading := len(target) > 0 && target[0] == '#'
+						isSubheading := len(target) == 0 && isSubTarget
 						if isSubheading {
-							store.AddRef(string(target), lsp.GetRange(n))
+							store.AddRef(string(subTarget), lsp.GetRange(n))
 						}
 					}
 				}

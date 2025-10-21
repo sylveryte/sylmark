@@ -38,44 +38,46 @@ func NewHandler() (hanlder *LangHandler) {
 }
 
 func (h *LangHandler) loadDocData(mdDocPath string) {
-	uri, content, trees, err := TreesFromMdDocPath(mdDocPath, h.parse)
+	uri, content, trees, err := TreesFromUri(mdDocPath, h.parse)
 	if err != nil {
 		return
 	}
 	// using directly ContentFromDocPath to skip caching in store
 	defer trees[0].Close()
 	defer trees[1].Close()
-	h.Store.LoadData(uri, content, trees)
+
+	id := h.Store.GetIdFromURI(uri)
+	h.Store.LoadData(id, content, trees)
 }
 
-func (h *LangHandler) onDocCreated(uri lsp.DocumentURI, content string) {
-	h.onDocOpened(uri, content)
+func (h *LangHandler) onDocCreated(id data.Id, content string) {
+	h.onDocOpened(id, content)
+	uri, _ := h.Store.GetUri(id)
 	docPath, _ := data.PathFromURI(uri)
 	h.loadDocData(docPath)
 }
 func (h *LangHandler) onDocRenamed(param lsp.FileRename) {
-	docData, ok := h.Store.GetDocMustTree(param.OldUri, h.parse)
-	var content string
-	if ok {
-		content = string(docData.Content)
-	}
-	h.onDocDeleted(param.OldUri)
-	h.onDocCreated(param.NewUri, content)
-
+	id := h.Store.GetIdFromURI(param.OldUri)
+	// replace uri in idstore
+	h.Store.IdStore.ReplaceUri(id, param.NewUri)
+	oldTarget, _ := data.GetTarget(param.OldUri)
+	newTarget, _ := data.GetTarget(param.NewUri)
+	h.Store.ReplaceTarget(id, oldTarget, newTarget)
 }
-func (h *LangHandler) onDocDeleted(uri lsp.DocumentURI) {
-	docData, ok := h.Store.GetDocMustTree(uri, h.parse)
+func (h *LangHandler) onDocDeleted(id data.Id) {
+	docData, ok := h.Store.GetDocMustTree(id, h.parse)
 	if ok {
-		h.Store.UnloadData(uri, string(docData.Content), docData.Trees)
-		h.Store.RemoveDoc(uri)
+		h.Store.UnloadData(id, string(docData.Content), docData.Trees)
+		h.Store.RemoveDoc(id)
 	}
 }
-func (h *LangHandler) onDocOpened(uri lsp.DocumentURI, content string) {
-	h.Store.UpdateAndReloadDoc(uri, content, h.parse)
+func (h *LangHandler) onDocOpened(id data.Id, content string) {
+	h.Store.UpdateAndReloadDoc(id, content, h.parse)
 }
 
 func (h *LangHandler) onDocChanged(uri lsp.DocumentURI, changes lsp.TextDocumentContentChangeEvent) {
-	h.Store.SyncChangedDocument(uri, changes, h.parse)
+	id := h.Store.GetIdFromURI(uri)
+	h.Store.SyncChangedDocument(id, changes, h.parse)
 }
 
 func getParsers() [2]*tree_sitter.Parser {
@@ -102,16 +104,18 @@ func (h *LangHandler) SetupGrammars() {
 	h.InlineParser = parsers[1]
 }
 
-func (h *LangHandler) DocAndNodeFromURIAndPosition(uri lsp.DocumentURI, position lsp.Position, parse lsp.ParseFunction) (doc data.Document, node *tree_sitter.Node, ok bool) {
-	docData, ok := h.Store.GetDocMustTree(uri, parse)
+func (h *LangHandler) DocAndNodeFromURIAndPosition(id data.Id, position lsp.Position, parse lsp.ParseFunction) (docData data.DocumentData, node *tree_sitter.Node, ok bool) {
+	docData, ok = h.Store.GetDocMustTree(id, parse)
 	if !ok {
-		slog.Error("Document missing" + string(uri))
-		return "", nil, false
+		slog.Error("Document missing" + string(id))
+		return docData, nil, false
 	}
 	point := lsp.PointFromPosition(position)
 
-	doc = docData.Content
 	node = docData.Trees.GetMainTree().RootNode().NamedDescendantForPointRange(point, point)
+	if node.Kind() == "atx_heading" {
+		return
+	}
 	if node.Parent().Kind() == "atx_heading" {
 		node = node.Parent()
 		return

@@ -29,10 +29,10 @@ func (h *LangHandler) handleTextDocumentDidChange(ctx context.Context, _ *jsonrp
 	for _, c := range changes {
 		h.onDocChanged(params.TextDocument.URI, c)
 	}
-	// slog.Info(fmt.Sprintf("=====>text change [[%dms]]<=====", time.Since(t).Milliseconds()))
+	// utils.Sprintf("=====>text change [[%dms]]<=====", time.Since(t).Milliseconds())
 
 	// go h.ShowMessage(lsp.MessageTypeLog, "Changed")
-	// slog.Info("handleTextDocumentDidChange uri=" + string(rawUri))
+	// utils.Sprintf(rawUri)
 	// h.PublishDiagnostics(ctx, rawUri)
 
 	return nil, nil

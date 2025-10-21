@@ -22,7 +22,8 @@ func (h *LangHandler) handleTextDocumentDidOpen(_ context.Context, _ *jsonrpc2.C
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 	content := params.TextDocument.Text
 
-	h.onDocOpened(params.TextDocument.URI,content)
+	id := h.Store.GetIdFromURI(params.TextDocument.URI)
+	h.onDocOpened(id, content)
 
 	return nil, nil
 

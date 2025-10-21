@@ -50,9 +50,9 @@ func (fs *FootNotesStore) GetFootNote(target string) (FootNoteRef, bool) {
 	return r, ok
 }
 
-func (s *Store) GetLoadedFootNotesStore(uri lsp.DocumentURI, parse lsp.ParseFunction) *FootNotesStore {
+func (s *Store) GetLoadedFootNotesStore(id Id, parse lsp.ParseFunction) *FootNotesStore {
 	fs := GetNewFootNotesStore()
-	docData, ok := s.GetDocMustTree(uri, parse)
+	docData, ok := s.GetDocMustTree(id, parse)
 	if ok {
 		lsp.TraverseNodeWith(docData.Trees.GetInlineTree().RootNode(), func(n *tree_sitter.Node) {
 			switch n.Kind() {
@@ -80,10 +80,10 @@ func getExecertOfShortcutLink(endChar int, line string) (excert string, ok bool)
 	return "", false
 }
 
-func (s *Store) GetFootNoteCompletions(arg string, rng lsp.Range, uri *lsp.DocumentURI) []lsp.CompletionItem {
+func (s *Store) GetFootNoteCompletions(arg string, rng lsp.Range, id Id) []lsp.CompletionItem {
 	completions := []lsp.CompletionItem{}
 	strppedArg := strings.TrimSpace(arg)
-	doc, ok := s.GetDoc(*uri)
+	doc, ok := s.GetDoc(id)
 	if !ok {
 		slog.Error("Failed to get doc for GetFootNoteCompletions")
 		return completions

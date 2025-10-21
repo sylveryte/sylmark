@@ -2,20 +2,16 @@ package data
 
 import (
 	"fmt"
-	"log/slog"
 	"sylmark/lsp"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction) (items []lsp.Diagnostic) {
-	if store == nil {
-		slog.Error("DocumentStore not defined")
-		return
-	}
 	s := *store
 
-	doc, ok := s.GetDocMustTree(uri, parse)
+	id := s.GetIdFromURI(uri)
+	doc, ok := s.GetDocMustTree(id, parse)
 	if !ok {
 		return
 	}
@@ -27,11 +23,10 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 		switch n.Kind() {
 		case "atx_heading":
 			{
-				target, ok := GetWikilinkTarget(n, content, uri)
+				subTarget, ok := GetSubTarget(n, content)
 				if ok {
-					refs, found := s.GLinkStore.GetRefs(target)
-					headingTarget, _ := getHeadingTarget(n, content)
-					subrefs, subfound := doc.Headings.GetRefs(headingTarget)
+					refs, found := s.LinkStore.GetRefs(id, subTarget)
+					subrefs, subfound := doc.Headings.GetRefs(string(subTarget))
 					if found || subfound {
 						if subfound && len(subrefs) > 0 {
 							rng := lsp.GetRange(n)
@@ -62,11 +57,11 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 		switch n.Kind() {
 		case "wiki_link":
 			{
-				target, ok := GetWikilinkTarget(n, content, uri)
+				target, subTarget, _, ok := GetWikilinkTargets(n, content)
 				if ok {
-					isSubheading := len(target) > 0 && target[0] == '#'
+					isSubheading := len(target) == 0
 					if isSubheading {
-						starget := string(target)
+						starget := string(subTarget)
 						_, found := doc.Headings.GetDef(starget)
 						if !found {
 							rng := lsp.GetRange(n)
@@ -78,9 +73,9 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 							})
 						}
 					} else {
-
-						_, found := s.GLinkStore.GetDefs(target)
-						refs, rfound := s.GLinkStore.GetRefs(target)
+						_, found := s.GetDefsFromTarget(target, subTarget)
+						refs, rfound := s.GetRefsFromTarget(target, subTarget)
+						// utils.Sprintf("%d defs, %v found | target=%s subTarget%s %drefs", len(defs), found, target, subTarget,len(refs))
 						msg := "Unresolved"
 						if rfound {
 							if len(refs) > 1 {
@@ -105,29 +100,29 @@ func (store *Store) GetDiagnostics(uri lsp.DocumentURI, parse lsp.ParseFunction)
 		}
 	})
 
-	fileTarget, ok := GetFileGTarget(uri)
-	if ok {
-		refs, rfound := s.GLinkStore.GetRefs(GTarget(fileTarget))
-		if rfound {
-			msg := fmt.Sprintf("File %d", len(refs))
-			items = append(items, lsp.Diagnostic{
-				Severity: lsp.DiagnosticSeverityInformation,
-				Message:  msg,
-				Range:    &lsp.Range{},
-			})
-
-		}
-		defs, dfound := s.GLinkStore.GetDefs(GTarget(fileTarget))
-		if dfound && len(defs) > 1 {
-			msg := fmt.Sprintf("File name has been used %d times. Consider different name for better wikilinks.", len(defs))
-			items = append(items, lsp.Diagnostic{
-				Severity: lsp.DiagnosticSeverityWarning,
-				Message:  msg,
-				Range:    &lsp.Range{},
-			})
-
-		}
+	refs, rfound := s.LinkStore.GetRefs(id, "")
+	if rfound && len(refs) > 0 {
+		msg := fmt.Sprintf("F%d", len(refs))
+		items = append(items, lsp.Diagnostic{
+			Severity: lsp.DiagnosticSeverityInformation,
+			Message:  msg,
+			Range:    &lsp.Range{},
+		})
 	}
+	// file warning for duplicate names
+	// target, ok := GetTarget(uri)
+	// if ok {
+	// 	defs, dfound := s.GetDefsFromTarget(target, "")
+	// 	if dfound && len(defs) > 1 {
+	// 		msg := fmt.Sprintf("File name has been used %d times. Consider different name for better wikilinks.", len(defs))
+	// 		items = append(items, lsp.Diagnostic{
+	// 			Severity: lsp.DiagnosticSeverityWarning,
+	// 			Message:  msg,
+	// 			Range:    &lsp.Range{},
+	// 		})
+	//
+	// 	}
+	// }
 
 	return items
 }

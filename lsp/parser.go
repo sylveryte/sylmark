@@ -35,8 +35,8 @@ func PrintTsTree(node tree_sitter.Node, depth int, cont string) {
 	nodeConte := cont[node.StartByte():node.EndByte()]
 	slog.Info(fmt.Sprintf("%sNode: %s (%s), Range: (%d,%d)-(%d,%d) Text: (%s)", indent, node.Kind(), node.GrammarName(), node.StartByte(), node.StartPosition(), node.EndByte(), node.EndPosition(), nodeConte))
 
-	for i := range int(node.ChildCount()) {
-		child := node.Child(uint(i))
+	for i := range int(node.NamedChildCount()) {
+		child := node.NamedChild(uint(i))
 		PrintTsTree(*child, depth+1, cont)
 	}
 }
@@ -67,8 +67,8 @@ func GetRange(node *tree_sitter.Node) Range {
 
 func TraverseNodeWith(node *tree_sitter.Node, action func(*tree_sitter.Node)) {
 
-	for i := range int(node.ChildCount()) {
-		child := node.Child(uint(i))
+	for i := range int(node.NamedChildCount()) {
+		child := node.NamedChild(uint(i))
 		action(child)
 		TraverseNodeWith(child, action)
 	}
@@ -89,7 +89,8 @@ func FieldText(parent *tree_sitter.Node, field string, content string) (string, 
 
 func GetParentalKind(node *tree_sitter.Node) *tree_sitter.Node {
 	k := node.Kind()
-	if k == "link_destination" || k == "link_text" {
+	switch k {
+	case "link_destination", "link_text", "heading_content":
 		return node.Parent()
 	}
 	return node

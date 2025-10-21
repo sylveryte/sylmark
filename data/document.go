@@ -13,10 +13,10 @@ import (
 
 type Document string
 type DocumentData struct {
-	Trees      *lsp.Trees
-	Content    Document
-	Headings   *HeadingsStore
-	FootNotes  *FootNotesStore
+	Trees     *lsp.Trees
+	Content   Document
+	Headings  *HeadingsStore
+	FootNotes *FootNotesStore
 }
 
 func NewDocumentData(doc Document, trees *lsp.Trees) *DocumentData {
@@ -71,7 +71,7 @@ func GetDirPathFromURI(uri lsp.DocumentURI) (string, error) {
 
 func GetFileURIInSameURIPath(fileName string, baseURI lsp.DocumentURI) (uri lsp.DocumentURI, err error) {
 	dir, err := DirPathFromURI(baseURI)
-	urlPath := filepath.Join(dir,fileName)
+	urlPath := filepath.Join(dir, fileName)
 	return UriFromPath(urlPath)
 }
 
@@ -116,20 +116,28 @@ func ContentFromDocPath(mdDocPath string) string {
 	return string(contentByte)
 }
 
-func (store *Store) GetExcerpt(loc lsp.Location) string {
-	docData, ok := store.GetDoc(loc.URI)
+// full path is relative to workspace
+func (s *Store) GetPathRelRoot(uri lsp.DocumentURI) (relPath string, err error) {
+	path, err := PathFromURI(uri)
+	relPath, err = filepath.Rel(s.Config.RootPath, path)
+	return
+}
+
+func (s *Store) GetExcerpt(id Id, rng lsp.Range) string {
+	docData, ok := s.GetDoc(id)
 	if !ok {
-		slog.Error("Failed to get doc for GetExcerpt" + string(loc.URI))
+		slog.Error("Failed to get doc for GetExcerpt" + string(id))
 		return ""
 	}
 
 	lines := bytes.Split([]byte(docData.Content), []byte("\n"))
-	startLine := loc.Range.Start.Line
-	endLine := startLine + int(store.ExcerptLength)
+	startLine := rng.Start.Line
+	endLine := startLine + int(s.ExcerptLength)
 
 	if endLine >= len(lines) {
 		endLine = len(lines) - 1
 	}
+	// syltodo make it safe
 	exLines := lines[startLine:endLine]
 	return fmt.Sprintf("\n`Preview`\n\n%s\n`...`\n", string(bytes.Join(exLines, []byte("\n"))))
 }

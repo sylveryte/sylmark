@@ -21,7 +21,8 @@ func (h *LangHandler) handleCodeAction(_ context.Context, _ *jsonrpc2.Conn, req 
 	}
 	params.TextDocument.URI, _ = data.CleanUpURI(string(params.TextDocument.URI))
 
-	items := h.Store.GetCodeActions(params.TextDocument.URI, params.Context.Diagnostics, params.Range, h.parse)
+	id := h.Store.GetIdFromURI(params.TextDocument.URI)
+	items := h.Store.GetCodeActions(id, params.Context.Diagnostics, params.Range, h.parse)
 
 	return items, nil
 }

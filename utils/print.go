@@ -12,3 +12,7 @@ func PrintLocs(locs []lsp.Location) {
 		slog.Info(fmt.Sprintf("\n%s", string(l.URI.GetFileName())))
 	}
 }
+
+func Sprintf(format string, a ...any) {
+	slog.Info(fmt.Sprintf(format, a...))
+}

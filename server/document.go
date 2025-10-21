@@ -3,7 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http"
-	"sylmark/data"
+	"sylmark/lsp"
 )
 
 type ShowDocumentParams struct {
@@ -18,12 +18,11 @@ func (server *Server) ShowDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	node, found := server.graphStore.GetNodeFromId(py.Id)
+	node, found := server.graphStore.nodeStore.get(NodeId(py.Id))
 	if found {
-		locs := server.store.GetGTargetDefinition(data.GTarget(node.Name))
-		if len(locs) > 0 {
-			loc := locs[0]
-			server.showDocument(loc.URI, false, loc.Range)
+		uri, ok := server.store.GetUri(node.InternalId)
+		if ok {
+			server.showDocument(uri, false, lsp.Range{})
 		}
 	}
 }
