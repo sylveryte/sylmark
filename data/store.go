@@ -98,6 +98,15 @@ func (s *Store) UnloadData(id Id, content string, trees *lsp.Trees) {
 			{
 				s.RemoveTag(n, uri, &content)
 			}
+		case "inline_link":
+			linkUri, ok := GetUriFromInlineNode(n, content, uri)
+			subTarget := SubTarget("")
+			linkUri, subTarget, _ = GetUrlAndSubTarget(string(linkUri))
+			if ok && IsMdFile(string(linkUri)) {
+				linkId := s.GetIdFromURI(linkUri)
+				loc := id.LocationOf(n)
+				s.LinkStore.RemoveRef(linkId, subTarget, loc)
+			}
 		}
 	})
 }
@@ -105,9 +114,8 @@ func (s *Store) UnloadData(id Id, content string, trees *lsp.Trees) {
 func (s *Store) LoadData(id Id, content string, trees *lsp.Trees) {
 	// utils.Sprintf("LoadData id=%d", id)
 
-	// syltodo
 	uri, _ := s.GetUri(id)
-	// store.AddFileGTarget(uri)
+	s.LinkStore.AddFileGTarget(id)
 	lsp.TraverseNodeWith(trees.GetMainTree().RootNode(), func(n *tree_sitter.Node) {
 		switch n.Kind() {
 		case "atx_heading":
@@ -142,17 +150,14 @@ func (s *Store) LoadData(id Id, content string, trees *lsp.Trees) {
 				s.AddTag(n, uri, &content)
 			}
 		case "inline_link":
-			slog.Info("Cool inline_link")
-			lsp.PrintTsTree(*trees.GetInlineTree().RootNode(), 0, content)
 			linkUri, ok := GetUriFromInlineNode(n, content, uri)
-
+			subTarget := SubTarget("")
+			linkUri, subTarget, _ = GetUrlAndSubTarget(string(linkUri))
 			if ok && IsMdFile(string(linkUri)) {
 				linkId := s.GetIdFromURI(linkUri)
-				loc := linkId.LocationOf(n)
-				// syltodo add isSubheading logic for # heading support
-				s.LinkStore.AddRef(linkId, "", loc)
+				loc := id.LocationOf(n)
+				s.LinkStore.AddRef(linkId, subTarget, loc)
 			}
-			// syltodo
 		}
 	})
 }

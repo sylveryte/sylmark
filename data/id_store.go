@@ -12,22 +12,22 @@ import (
 type Id uint
 
 type IdStore struct {
-	id            map[Id]lsp.DocumentURI
+	Id            map[Id]lsp.DocumentURI
 	uri           map[lsp.DocumentURI]Id
-	shadowTargets map[Id][]Target
+	ShadowTargets map[Id][]Target
 }
 
 func NewIdStore() IdStore {
 	return IdStore{
-		id:            map[Id]lsp.DocumentURI{},
+		Id:            map[Id]lsp.DocumentURI{},
 		uri:           map[lsp.DocumentURI]Id{},
-		shadowTargets: map[Id][]Target{},
+		ShadowTargets: map[Id][]Target{},
 	}
 }
 func (s *IdStore) Print() {
 	slog.Info("IdStore===============>>>>>>>>>>")
 	slog.Info("IdStore====id")
-	for k, v := range s.id {
+	for k, v := range s.Id {
 		slog.Info(fmt.Sprintf("[%d]=[%s]", k, v))
 	}
 	slog.Info("IdStore====uri")
@@ -35,22 +35,22 @@ func (s *IdStore) Print() {
 		slog.Info(fmt.Sprintf("[%s]=[%d]", k, v))
 	}
 	slog.Info("IdStore====shadowTargets")
-	for k, v := range s.shadowTargets {
+	for k, v := range s.ShadowTargets {
 		slog.Info(fmt.Sprintf("[%d]=[%s]", k, v))
 	}
 	slog.Info("IdStore===============<<<<<<<<<<<<")
 }
 func (s *IdStore) ReplaceUri(id Id, uri lsp.DocumentURI) {
 	// utils.Sprintf("ReplaceUri       id=[%d] uri=[%s]", id, uri)
-	s.id[id] = uri
+	s.Id[id] = uri
 	s.uri[uri] = id
 
 	// cleanup shadow
-	delete(s.shadowTargets, id)
+	delete(s.ShadowTargets, id)
 }
 
 func (s *IdStore) addShadowEntry(target Target, id Id) {
-	targets, found := s.shadowTargets[id]
+	targets, found := s.ShadowTargets[id]
 	// utils.Sprintf("addShadowEntry target=[%s] id=[%d] [%v]", target, id, found)
 	if !found {
 		// doesn't exists, no need to add, since shadowTargets are already in
@@ -60,13 +60,13 @@ func (s *IdStore) addShadowEntry(target Target, id Id) {
 	alreadyIdExists := slices.Contains(targets, target)
 	if !alreadyIdExists {
 		targets = append(targets, target)
-		s.shadowTargets[id] = targets
+		s.ShadowTargets[id] = targets
 	}
 }
 
 // find if all shadowId refs are compatible with uri
 func (s *Store) isClaimableShadow(shadowId Id, uri lsp.DocumentURI) bool {
-	targets, found := s.IdStore.shadowTargets[shadowId]
+	targets, found := s.IdStore.ShadowTargets[shadowId]
 	if !found {
 		return false
 	}
@@ -99,27 +99,22 @@ func (s *Store) isClaimableShadow(shadowId Id, uri lsp.DocumentURI) bool {
 
 // doesn't check if exists same uri, only store
 func (s *IdStore) addEntry(uri lsp.DocumentURI) Id {
-	id := Id(len(s.id) + 1)
+	id := Id(len(s.Id) + 1)
 	// utils.Sprintf(" IdStore addEntry uri=[%s] id=[%d]", uri, id)
 	// utils.Sprintf("addEntry uri=[%s] id=[%d] ", uri, id)
-	s.id[id] = uri
+	s.Id[id] = uri
 	if len(uri) > 0 {
 		s.uri[uri] = id
 	} else {
-		s.shadowTargets[id] = []Target{}
+		s.ShadowTargets[id] = []Target{}
 	}
 	return id
 }
 
 // id with no URI
 func (s *IdStore) isShadowId(id Id) bool {
-	_, ok := s.shadowTargets[id]
+	_, ok := s.ShadowTargets[id]
 	return ok
-	// if ok {
-	// 	isShadow := len(uri) == 0
-	// 	return isShadow
-	// }
-	// return true
 }
 
 // id with no URI

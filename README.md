@@ -84,17 +84,17 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 - [x] Symbols
   - [x] Dynamic workspace symbols
 - [x] Switch to official Treesitter markdown parsers
-- [/] Inline link (Markdown style links )
+- [x] True Relative Inline link (Markdown style links )
   - [x] Any file
   - [x] Images file link include !
-  - [ ] Markdown files
-    - [ ] Make proper links in store
-    - [ ] References
-    - [ ] Hover
-    - [ ] Definitions
-    - [ ] Interoperability with wikilinks
-    - [ ] Headings
-- [x] Footnotes
+  - [x] Markdown files
+    - [x] Make proper links in store
+    - [x] References
+    - [x] Hover
+    - [x] Definitions
+    - [x] Interoperability with wikilinks
+    - [x] Headings
+- [x] Shortcuts/Footnotes
 - [ ] Rename heading across workspace
 - [ ] Rename file changes across workspace
 - [ ] Better nested tag support

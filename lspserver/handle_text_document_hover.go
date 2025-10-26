@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
 
@@ -28,7 +29,7 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 		return nil, nil
 	}
 
-	h.Store.TargetStore.Print()
+	// h.Store.TargetStore.Print()
 	h.Store.IdStore.Print()
 	h.Store.LinkStore.Print()
 
@@ -63,7 +64,21 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 					content = refsText + content
 				}
 			case "inline_link":
-				// syltodo add hover if md file link, can look at get definition
+				uri, ok := data.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
+				if !ok {
+					slog.Error("Failed to make uri ")
+					return nil, nil
+				}
+				rng := lsp.Range{}
+				uri, subTarget, found := data.GetUrlAndSubTarget(string(uri))
+				if data.IsMdFile(string(uri)) {
+					if found {
+						id = h.Store.GetIdFromURI(uri)
+						rng, _ = h.Store.LinkStore.GetDef(id, subTarget)
+					}
+					content += h.Store.LinkStore.GetSubTargetHover(id, subTarget) + "\n---"
+					content += h.Store.GetExcerpt(id, rng)
+				}
 
 			case "atx_heading":
 				subTarget, ok := data.GetSubTarget(parentedNode, string(doc.Content))

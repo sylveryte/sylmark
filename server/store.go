@@ -1,8 +1,8 @@
 package server
 
 import (
-	"fmt"
 	"log/slog"
+	"strings"
 	"sylmark/data"
 )
 
@@ -99,18 +99,12 @@ func (server *Server) LoadGraph() {
 	// store everything in NodeStore
 	// adding resolved files
 	for id, link := range s.store.LinkStore {
+
+		// node
 		uri, ok := s.store.GetUri(id)
-		if !ok {
-			slog.Info(fmt.Sprintf("%d id has no uri %s", id, uri))
-			continue
-		}
 		relPath, err := s.store.GetPathRelRoot(uri)
-		if err != nil {
-			slog.Info(fmt.Sprintf("%d id has no relPath %s", id, err.Error()))
-			continue
-		}
-		target, ok := data.GetTarget(uri)
-		if ok {
+		if ok && len(uri) != 0 && err == nil {
+			target, _ := data.GetTarget(uri)
 			s.graphStore.nodeStore.add(Node{
 				Id:         NodeId(id),
 				InternalId: id,
@@ -126,6 +120,31 @@ func (server *Server) LoadGraph() {
 				s.graphStore.linkStore.add(NodeId(id), NodeId(l.Id))
 			}
 		}
+	}
+	// add shadows
+	for id, tars := range s.store.IdStore.ShadowTargets {
+		var t data.Target
+		if len(tars) == 1 {
+			t = tars[0]
+		} else {
+			for _, tar := range tars {
+				if strings.ContainsRune(string(tar), '/') {
+					continue
+				}
+				t = tar
+			}
+			if len(t) == 0 {
+				t = tars[0]
+			}
+		}
+		s.graphStore.nodeStore.add(Node{
+			Id:         NodeId(id),
+			InternalId: id,
+			Name:       string(t),
+			Kind:       NodeKindUnresolvedFile,
+			Path:       string(t),
+		})
+
 	}
 
 	// add tags
@@ -155,6 +174,7 @@ func (server *Server) LoadGraph() {
 		s.graphStore.minCon = min(s.graphStore.minCon, con)
 		s.graphStore.maxCon = max(s.graphStore.maxCon, con)
 
+		s.graphStore.nodeStore.updateVal(id, con)
 		s.graphStore.nodeStore.updateVal(id, con)
 	}
 }

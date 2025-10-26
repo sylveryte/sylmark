@@ -163,11 +163,27 @@ func TestAnalyzeCompletionTrigger(t *testing.T) {
 		kind, arg, arg2, cstart, cend := analyzeTriggerKind(8, "[nice](k)")
 		assertMarkdown(t, CompletionInlineLinkEndHasText, kind, "k", "nice", arg, arg2, 0, 9, cstart, cend)
 	})
+	t.Run("32 markdown link basic blank with # end", func(t *testing.T) {
+		kind, arg, _, cstart, cend := analyzeTriggerKind(9, "some [](#)")
+		assert(t, CompletionInlineLinkEnd, kind, "#", arg, 5, 10, cstart, cend)
+	})
+	t.Run("33 markdown link basic blank with #", func(t *testing.T) {
+		kind, arg, _, cstart, cend := analyzeTriggerKind(9, "some [](#")
+		assert(t, CompletionInlineLink, kind, "#", arg, 5, 9, cstart, cend)
+	})
+	t.Run("34 markdown link basic link and # end", func(t *testing.T) {
+		kind, arg, _, cstart, cend := analyzeTriggerKind(13, "some [](cool#)")
+		assert(t, CompletionInlineLinkEnd, kind, "cool#", arg, 5, 14, cstart, cend)
+	})
+	t.Run("35 markdown link basic link and #", func(t *testing.T) {
+		kind, arg, _, cstart, cend := analyzeTriggerKind(13, "some [](cool#")
+		assert(t, CompletionInlineLink, kind, "cool#", arg, 5, 13, cstart, cend)
+	})
 
 	// foot note
-	t.Run("32 Footnote with end ", func(t *testing.T) {
+	t.Run("36 shortcut with end ", func(t *testing.T) {
 		kind, arg, _, cstart, cend := analyzeTriggerKind(2, "[k]")
-		assert(t, CompletionFootNoteEnd, kind, "k", arg, 0, 3, cstart, cend)
+		assert(t, CompletionShortcutEnd, kind, "k", arg, 0, 3, cstart, cend)
 	})
 }
 

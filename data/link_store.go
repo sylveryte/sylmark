@@ -264,3 +264,7 @@ func (store *Store) GetDefsFromTarget(target Target, subTarget SubTarget) (defs 
 
 	return
 }
+
+func (s *LinkStore) AddFileGTarget(id Id) {
+	s.AddDef(id, "", lsp.Range{})
+}

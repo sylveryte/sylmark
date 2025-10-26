@@ -3,6 +3,7 @@ package lspserver
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
 
@@ -60,7 +61,22 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 					}
 				}
 			case "inline_link":
-			// syltodo
+				uri, ok := data.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
+				if !ok {
+					slog.Error("Failed to make uri ")
+					return nil, nil
+				}
+				targetUri, subTarget, _ := data.GetUrlAndSubTarget(string(uri))
+				if data.IsMdFile(string(uri)) {
+					targetId := h.Store.GetIdFromURI(targetUri)
+					lrefs, found := h.Store.LinkStore.GetRefs(targetId, subTarget)
+					if found {
+						for _, idLoc := range lrefs {
+							idLocs = append(idLocs, idLoc)
+						}
+					}
+				}
+
 			case "atx_heading":
 				subTarget, ok := data.GetSubTarget(parentedNode, string(content))
 				if ok {

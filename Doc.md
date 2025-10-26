@@ -14,7 +14,7 @@ vars: {
     layout-engine: elk
     pad: 6
   }
-} 
+}
 s: Store
 ls: "map[id]Link" {
   style.double-border: true
@@ -101,6 +101,7 @@ s.OtherFiles -> sm
 ## Graph Store
 
 ```d2
+
 
 vars: {
   d2-config: {

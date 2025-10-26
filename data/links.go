@@ -3,7 +3,6 @@ package data
 import (
 	"strings"
 	"sylmark/lsp"
-	"sylmark/utils"
 
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
@@ -129,7 +128,7 @@ func (s *Store) ReplaceTarget(id Id, oldTarget Target, target Target) {
 
 // gets uri from id
 func (s *Store) GetUri(id Id) (lsp.DocumentURI, bool) {
-	uri, ok := s.IdStore.id[id]
+	uri, ok := s.IdStore.Id[id]
 	return uri, ok
 }
 
@@ -251,9 +250,9 @@ func (s *Store) getValidIds(target Target) ([]Id, bool) {
 func (s *Store) getIds(target Target) []Id {
 	ts := s.TargetStore
 	ids, ok := ts[target]
-	utils.Sprintf(">>>getIds target=[%s] ids=[%d] [%v]", target, ids, ok)
+	// utils.Sprintf(">>>getIds target=[%s] ids=[%d] [%v]", target, ids, ok)
 	if !ok {
-		utils.Sprintf("   getIds target=[%s]", target)
+		// utils.Sprintf("   getIds target=[%s]", target)
 		if strings.ContainsRune(string(target), '/') {
 			// variant route
 			// check if downVariants have any shadowId
@@ -289,7 +288,7 @@ func (s *Store) getIds(target Target) []Id {
 			id := s.IdStore.addEntry(lsp.DocumentURI(""))
 			ids = []Id{id}
 			// new id get from IdsStore
-			utils.Sprintf("    getIds newEntry [%s]=[%d]", target, id)
+			// utils.Sprintf("    getIds newEntry [%s]=[%d]", target, id)
 			s.addTargetEntry(target, id)
 		}
 	}

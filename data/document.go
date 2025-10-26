@@ -126,7 +126,7 @@ func (s *Store) GetPathRelRoot(uri lsp.DocumentURI) (relPath string, err error) 
 func (s *Store) GetExcerpt(id Id, rng lsp.Range) string {
 	docData, ok := s.GetDoc(id)
 	if !ok {
-		slog.Error("Failed to get doc for GetExcerpt" + string(id))
+		slog.Error(fmt.Sprintf("Failed to get doc for GetExcerpt %d", id))
 		return ""
 	}
 

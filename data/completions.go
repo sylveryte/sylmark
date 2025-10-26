@@ -19,11 +19,8 @@ func (s *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.CompletionIte
 
 	line := doc.Content.GetLine(params.Position.Line)
 
-	// utils.Sprintf("%d=%d Line=%s", params.Position.Character, params.CompletionContext.TriggerKind, line)
-
 	// this case where space is not considrered by below code
 	kind, arg, arg2, cstart, cend := analyzeTriggerKind(params.Position.Character, line)
-	// utils.Sprintf("Trigge kind is %d", kind)
 	rng := lsp.Range{
 		Start: lsp.Position{
 			Line:      params.Position.Line,
@@ -62,10 +59,10 @@ func (s *Store) GetCompletions(params lsp.CompletionParams) ([]lsp.CompletionIte
 		// inlinedownslinks syltodo cleanup args for below
 		inlinedownLinkCompletions := s.GetInlineLinkCompletions(arg, arg2, rng, &params.TextDocument.URI)
 		completions = append(completions, inlinedownLinkCompletions...)
-	case CompletionFootNote, CompletionFootNoteEnd:
+	case CompletionShortcut, CompletionShortcutEnd:
 		// inlinedownslinks syltodo cleanup args for below
-		footNoteCompletions := s.GetFootNoteCompletions(arg, rng, id)
-		completions = append(completions, footNoteCompletions...)
+		shortCutCompletions := s.GetFootNoteCompletions(arg, rng, id)
+		completions = append(completions, shortCutCompletions...)
 	}
 
 	return completions, nil
@@ -82,8 +79,8 @@ const (
 	CompletionInlineLinkEnd        CompletionTriggerKind = 5
 	CompletionInlineLinkHasText    CompletionTriggerKind = 6
 	CompletionInlineLinkEndHasText CompletionTriggerKind = 7
-	CompletionFootNote             CompletionTriggerKind = 8
-	CompletionFootNoteEnd          CompletionTriggerKind = 9
+	CompletionShortcut             CompletionTriggerKind = 8
+	CompletionShortcutEnd          CompletionTriggerKind = 9
 )
 
 func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg string, arg2 string, cstart, cend int) {
@@ -106,12 +103,12 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 		}
 
 		// loof for [
-		footNote := -1
+		shortCut := -1
 		for i := char - 1; i >= 0; i-- {
 			ch := line[i]
 			if ch == '[' {
 				if !(i > 0 && line[i-1] == '[') {
-					footNote = i
+					shortCut = i
 				}
 				break
 			}
@@ -154,7 +151,7 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 			}
 		}
 
-		if tag > -1 && wikistart == -1 {
+		if tag > -1 && wikistart == -1 && inlinelink==-1 {
 			// sylopti can make it so it takes right side into consideration for eg if cursor is at 2 for #sup can give arg=sup instead of arg=su
 			// check right for better arg and better cend
 			cstart = tag
@@ -221,15 +218,15 @@ func analyzeTriggerKind(char int, line string) (kind CompletionTriggerKind, arg 
 				}
 			}
 			arg = line[inlinelinkurlstart+1 : char]
-		} else if footNote > -1 {
-			cstart = footNote
+		} else if shortCut > -1 {
+			cstart = shortCut
 			cend = char
-			kind = CompletionFootNote
-			arg = line[footNote+1 : char]
+			kind = CompletionShortcut
+			arg = line[shortCut+1 : char]
 			for i := char; i < len(line); i++ {
 				if line[i] == ']' {
 					cend = i + 1
-					kind = CompletionFootNoteEnd
+					kind = CompletionShortcutEnd
 				} else if line[i] == '[' || line[i] == '(' || line[i] == ')' {
 					break
 				}

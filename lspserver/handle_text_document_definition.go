@@ -55,14 +55,21 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 			case "inline_link":
 				uri, ok := data.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
 				if !ok {
-					slog.Error("Failed to make uri " + err.Error())
+					slog.Error("Failed to make uri ")
 					return nil, nil
-
 				}
-				return lsp.Location{
-					URI:   uri,
-					Range: lsp.Range{},
-				}, nil
+				rng := lsp.Range{}
+				uri, subTarget, found := data.GetUrlAndSubTarget(string(uri))
+				if data.IsMdFile(string(uri)) {
+					if found {
+						id := h.Store.GetIdFromURI(uri)
+						rng, _ = h.Store.LinkStore.GetDef(id, subTarget)
+					}
+					return lsp.Location{
+						URI:   uri,
+						Range: rng,
+					}, nil
+				}
 
 			case "wiki_link":
 				target, subTarget, isSubTarget, _ := data.GetWikilinkTargets(parentedNode, string(doc.Content))
