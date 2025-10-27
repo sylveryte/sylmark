@@ -64,18 +64,16 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 					content = refsText + content
 				}
 			case "inline_link":
-				uri, ok := data.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
+				uri, ok := h.Store.Config.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
 				if !ok {
 					slog.Error("Failed to make uri ")
 					return nil, nil
 				}
 				rng := lsp.Range{}
-				uri, subTarget, found := h.Store.Config.GetMdRealUrlAndSubTarget(string(uri))
+				uri, subTarget, _ := h.Store.Config.GetMdRealUrlAndSubTarget(string(uri))
 				if data.IsMdFile(string(uri)) {
-					if found {
-						id = h.Store.GetIdFromURI(uri)
-						rng, _ = h.Store.LinkStore.GetDef(id, subTarget)
-					}
+					id = h.Store.GetIdFromURI(uri)
+					rng, _ = h.Store.LinkStore.GetDef(id, subTarget)
 					content += h.Store.LinkStore.GetSubTargetHover(id, subTarget) + "\n---"
 					content += h.Store.GetExcerpt(id, rng)
 				}
@@ -100,7 +98,7 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 					// utils.Sprintf("liddefs=%d", len(liddefs))
 					if defFound {
 						if len(liddefs) > 1 {
-							content = fmt.Sprintf("%d definitions found", len(liddefs))
+							content = fmt.Sprintf("%d definitions found\n", len(liddefs))
 						}
 						for _, ldef := range liddefs {
 							content += h.Store.LinkStore.GetSubTargetHover(ldef.Id, subTarget) + "\n---"

@@ -99,7 +99,7 @@ func (s *Store) UnloadData(id Id, content string, trees *lsp.Trees) {
 				s.RemoveTag(n, uri, &content)
 			}
 		case "inline_link":
-			linkUri, ok := GetUriFromInlineNode(n, content, uri)
+			linkUri, ok := s.Config.GetUriFromInlineNode(n, content, uri)
 			subTarget := SubTarget("")
 			linkUri, subTarget, _ = s.Config.GetMdRealUrlAndSubTarget(string(linkUri))
 			if ok && IsMdFile(string(linkUri)) {
@@ -150,7 +150,7 @@ func (s *Store) LoadData(id Id, content string, trees *lsp.Trees) {
 				s.AddTag(n, uri, &content)
 			}
 		case "inline_link":
-			linkUri, ok := GetUriFromInlineNode(n, content, uri)
+			linkUri, ok := s.Config.GetUriFromInlineNode(n, content, uri)
 			subTarget := SubTarget("")
 			linkUri, subTarget, _ = s.Config.GetMdRealUrlAndSubTarget(string(linkUri))
 			if ok && IsMdFile(string(linkUri)) {

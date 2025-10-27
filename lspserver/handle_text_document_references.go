@@ -61,7 +61,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 					}
 				}
 			case "inline_link":
-				uri, ok := data.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
+				uri, ok := h.Store.Config.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
 				if !ok {
 					slog.Error("Failed to make uri ")
 					return nil, nil

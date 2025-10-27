@@ -15,6 +15,7 @@ import (
 type Config struct {
 	RootMarkers              []string
 	IncludeMdExtensionMdLink bool `toml:"include_md_extension_md_link"`
+	HugoMdLink               bool `toml:"hugo_md_link"`
 	RootPath                 string
 	DateLayout               string
 }
@@ -25,6 +26,7 @@ func NewConfig() Config {
 		RootMarkers:              rmakers,
 		IncludeMdExtensionMdLink: true,
 		DateLayout:               time.DateOnly,
+		HugoMdLink:               false,
 	}
 }
 
@@ -44,6 +46,9 @@ func (c *Config) GetMdFormattedTargetUrl(path string) string {
 // adds .md where needed
 func (c *Config) GetMdRealUrlAndSubTarget(fullUrl string) (url lsp.DocumentURI, subTarget SubTarget, found bool) {
 	found = strings.ContainsRune(fullUrl, '#')
+	if c.HugoMdLink && !strings.HasPrefix(fullUrl, "file://") {
+		fullUrl = filepath.Join("..", fullUrl)
+	}
 	if found {
 		splits := strings.SplitN(fullUrl, "#", 2)
 		url = lsp.DocumentURI(splits[0])

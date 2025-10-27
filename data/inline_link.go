@@ -83,6 +83,9 @@ func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range,
 				continue
 			}
 			relPath, err := filepath.Rel(sourcePath, path)
+			if s.Config.HugoMdLink && !strings.HasPrefix(relPath, "file://") {
+				relPath = filepath.Join("..", relPath)
+			}
 			encodedRelPath := encodeForInlineLinkdownLinkPath(relPath)
 			if err != nil {
 				slog.Error("Something went wrong for path relative " + err.Error())
@@ -164,12 +167,18 @@ func GetFullPathRelatedTo(fullURI lsp.DocumentURI, filePath string) (string, err
 
 }
 
-func GetUriFromInlineNode(inlineNode *tree_sitter.Node, content string, relUri lsp.DocumentURI) (lsp.DocumentURI, bool) {
+func (c *Config) GetUriFromInlineNode(inlineNode *tree_sitter.Node, content string, relUri lsp.DocumentURI) (lsp.DocumentURI, bool) {
 
 	filePath, err := GetInlineLinkTarget(inlineNode, content, relUri)
 	if err != nil {
 		slog.Error("File doesnt exist")
 		return "", false
+	}
+	if c.HugoMdLink && strings.HasPrefix(filePath, "..") {
+		cleanFilePath, found := strings.CutPrefix(filePath, "..")
+		if found {
+			filePath = cleanFilePath
+		}
 	}
 	fullFilePath, err := GetFullPathRelatedTo(relUri, filePath)
 	if err != nil {

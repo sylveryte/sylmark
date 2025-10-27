@@ -94,6 +94,8 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
     - [x] Definitions
     - [x] Interoperability with wikilinks
     - [x] Headings
+    - [x] Support with or without .md extension
+    - [x] Support hugo content compatible linking
 - [x] Shortcuts/Footnotes
 - [x] Configuration (sylroot.toml)
 - [ ] Rename heading across workspace
