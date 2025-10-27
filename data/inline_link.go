@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sylmark/lsp"
-	"sylmark/utils"
 
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
@@ -21,7 +20,7 @@ func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range,
 	isHeadingMode := strings.ContainsRune(arg, '#')
 
 	if isHeadingMode {
-		fileUri, subTarget, _ := s.Config.GetMdRealUrlAndSubTarget(arg)
+		fileUri, _, _ := s.Config.GetMdRealUrlAndSubTarget(arg)
 		filePath := string(fileUri)
 		fullFilePath, err := GetFullPathRelatedTo(*uri, filePath)
 		if err != nil {
