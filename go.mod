@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/sylveryte/tree-sitter-markdown v0.0.0-20250924034049-063184969c08 // indirect
 	github.com/yuin/goldmark v1.7.13 // indirect

@@ -10,7 +10,6 @@ import (
 )
 
 func (h *LangHandler) addRootPathAndLoad(dir string) {
-	h.Store.Config.RootPath = dir
 	h.loadAllClosedDocsData()
 	h.Store.Config.CreatDirsIfNeeded()
 }

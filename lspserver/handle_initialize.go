@@ -3,7 +3,6 @@ package lspserver
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
 
@@ -26,7 +25,8 @@ func (h *LangHandler) handleInitialize(_ context.Context, _ *jsonrpc2.Conn, req 
 		if err != nil {
 			return nil, err
 		}
-		slog.Warn("RootPath is " + rootPath)
+		h.Store.Config.RootPath = rootPath
+		h.Store.Config.LoadConfig()
 		h.addRootPathAndLoad(rootPath)
 	}
 

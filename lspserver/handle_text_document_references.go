@@ -66,7 +66,7 @@ func (h *LangHandler) handleTextDocumentReferences(_ context.Context, _ *jsonrpc
 					slog.Error("Failed to make uri ")
 					return nil, nil
 				}
-				targetUri, subTarget, _ := data.GetUrlAndSubTarget(string(uri))
+				targetUri, subTarget, _ := h.Store.Config.GetMdRealUrlAndSubTarget(string(uri))
 				if data.IsMdFile(string(uri)) {
 					targetId := h.Store.GetIdFromURI(targetUri)
 					lrefs, found := h.Store.LinkStore.GetRefs(targetId, subTarget)

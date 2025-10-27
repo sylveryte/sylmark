@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sylmark/lsp"
+	"sylmark/utils"
 
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
@@ -20,9 +21,8 @@ func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range,
 	isHeadingMode := strings.ContainsRune(arg, '#')
 
 	if isHeadingMode {
-		splits := strings.SplitN(arg, "#", 2)
-		filePath := splits[0]
-		subTarget := splits[1]
+		fileUri, subTarget, _ := s.Config.GetMdRealUrlAndSubTarget(arg)
+		filePath := string(fileUri)
 		fullFilePath, err := GetFullPathRelatedTo(*uri, filePath)
 		if err != nil {
 			slog.Warn(fmt.Sprintf("Link file issue %s", err.Error()))
@@ -37,22 +37,23 @@ func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range,
 			if len(subTargetNRange.subTarget) == 0 {
 				continue
 			}
-			fullLink := FullTarget(string(filePath) + string(subTargetNRange.subTarget))
-			match := fuzzy.MatchFold(arg+subTarget, string(fullLink))
+			mdTarget := s.Config.GetMdFormattedTargetUrl(filePath)
+			fullLink := FullTarget(string(mdTarget) + string(subTargetNRange.subTarget))
+			match := fuzzy.MatchFold(arg, string(fullLink))
 			var link string
 			if match {
 				link = fmt.Sprintf("[%s](%s)", text, fullLink)
+				completions = append(completions, lsp.CompletionItem{
+					Label:    link,
+					Kind:     lsp.ReferenceCompletion,
+					SortText: "b",
+					TextEdit: &lsp.TextEdit{
+						Range:   rng,
+						NewText: link,
+					},
+					Detail: "",
+				})
 			}
-			completions = append(completions, lsp.CompletionItem{
-				Label:    link,
-				Kind:     lsp.ReferenceCompletion,
-				SortText: "b",
-				TextEdit: &lsp.TextEdit{
-					Range:   rng,
-					NewText: link,
-				},
-				Detail: "",
-			})
 		}
 	} else {
 
@@ -93,10 +94,11 @@ func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range,
 				text = fn
 			}
 			var link string
+			formattedEncodedRelPath := s.Config.GetMdFormattedTargetUrl(encodedRelPath)
 			if s.isImage(relPath) {
-				link = fmt.Sprintf("![%s](%s)", text, encodedRelPath)
+				link = fmt.Sprintf("![%s](%s)", text, formattedEncodedRelPath)
 			} else {
-				link = fmt.Sprintf("[%s](%s)", text, encodedRelPath)
+				link = fmt.Sprintf("[%s](%s)", text, formattedEncodedRelPath)
 			}
 			completions = append(completions, lsp.CompletionItem{
 				Label:    link,
@@ -128,7 +130,7 @@ func DecodeForInlineLinkdownLinkPath(path string) string {
 	return strings.ReplaceAll(path, "%20", " ")
 }
 func RemoveMdExtOnly(fileName string) string {
-	return strings.ReplaceAll(fileName, ".md", "")
+	return strings.TrimSuffix(fileName, ".md")
 }
 func (s *Store) isImage(filePath string) bool {
 	ext := filepath.Ext(filePath)
@@ -183,17 +185,15 @@ func GetUriFromInlineNode(inlineNode *tree_sitter.Node, content string, relUri l
 	return uri, true
 }
 
+// checks if ends with .md
 func IsMdFile(path string) bool {
 	return strings.HasSuffix(path, ".md")
 }
-func GetUrlAndSubTarget(fullUrl string) (url lsp.DocumentURI, subTarget SubTarget, found bool) {
-	found = strings.ContainsRune(fullUrl, '#')
-	if found {
-		splits := strings.SplitN(fullUrl, "#", 2)
-		url = lsp.DocumentURI(splits[0])
-		subTarget = SubTarget("#" + splits[1])
-		return url, subTarget, found
-	} else {
-		return lsp.DocumentURI(fullUrl), subTarget, found
+
+// adds .md at suffix if needed
+func GetMdRealTargetUrl(path string) string {
+	if strings.HasSuffix(path, ".md") {
+		return path
 	}
+	return path + ".md"
 }

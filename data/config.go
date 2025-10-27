@@ -5,22 +5,54 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sylmark/lsp"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 type Config struct {
-	RootMarkers *[]string `yaml:"root-markers" json:"rootMarkers"`
-	RootPath    string
-	DateLayout  string
+	RootMarkers              []string
+	IncludeMdExtensionMdLink bool `toml:"include_md_extension_md_link"`
+	RootPath                 string
+	DateLayout               string
 }
 
 func NewConfig() Config {
-	rmakers := []string{".sylroot"}
+	rmakers := []string{"sylroot.toml"}
 	return Config{
-		RootMarkers: &rmakers,
-		DateLayout:  time.DateOnly,
+		RootMarkers:              rmakers,
+		IncludeMdExtensionMdLink: true,
+		DateLayout:               time.DateOnly,
 	}
+}
+
+func (c *Config) LoadConfig() {
+	filePath := filepath.Join(c.RootPath, "sylroot.toml")
+	toml.DecodeFile(filePath, c)
+}
+
+// removes .md file if config demands
+func (c *Config) GetMdFormattedTargetUrl(path string) string {
+	if c.IncludeMdExtensionMdLink {
+		return path
+	}
+	return RemoveMdExtOnly(path)
+}
+
+// adds .md where needed
+func (c *Config) GetMdRealUrlAndSubTarget(fullUrl string) (url lsp.DocumentURI, subTarget SubTarget, found bool) {
+	found = strings.ContainsRune(fullUrl, '#')
+	if found {
+		splits := strings.SplitN(fullUrl, "#", 2)
+		url = lsp.DocumentURI(splits[0])
+		subTarget = SubTarget("#" + splits[1])
+	} else {
+		url = lsp.DocumentURI(fullUrl)
+	}
+	url = lsp.DocumentURI(GetMdRealTargetUrl(string(url)))
+	return url, subTarget, found
 }
 
 func (c *Config) GetDateString(date time.Time) string {

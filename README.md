@@ -14,7 +14,7 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
 ```lua
     vim.lsp.config.sylmark = {
       cmd = { "path/to/binary" },
-      root_markers = { '.sylroot' },
+      root_markers = { 'sylroot.toml' },
       filetypes = { 'markdown' },
       on_attach = function(client, bufnr)
         vim.api.nvim_create_user_command(
@@ -95,6 +95,7 @@ Personal Knowledge Mangement(PKM) Language Server (LSP) with markdown files in g
     - [x] Interoperability with wikilinks
     - [x] Headings
 - [x] Shortcuts/Footnotes
+- [x] Configuration (sylroot.toml)
 - [ ] Rename heading across workspace
 - [ ] Rename file changes across workspace
 - [ ] Better nested tag support

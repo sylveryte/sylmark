@@ -101,7 +101,7 @@ func (s *Store) UnloadData(id Id, content string, trees *lsp.Trees) {
 		case "inline_link":
 			linkUri, ok := GetUriFromInlineNode(n, content, uri)
 			subTarget := SubTarget("")
-			linkUri, subTarget, _ = GetUrlAndSubTarget(string(linkUri))
+			linkUri, subTarget, _ = s.Config.GetMdRealUrlAndSubTarget(string(linkUri))
 			if ok && IsMdFile(string(linkUri)) {
 				linkId := s.GetIdFromURI(linkUri)
 				loc := id.LocationOf(n)
@@ -152,7 +152,7 @@ func (s *Store) LoadData(id Id, content string, trees *lsp.Trees) {
 		case "inline_link":
 			linkUri, ok := GetUriFromInlineNode(n, content, uri)
 			subTarget := SubTarget("")
-			linkUri, subTarget, _ = GetUrlAndSubTarget(string(linkUri))
+			linkUri, subTarget, _ = s.Config.GetMdRealUrlAndSubTarget(string(linkUri))
 			if ok && IsMdFile(string(linkUri)) {
 				linkId := s.GetIdFromURI(linkUri)
 				loc := id.LocationOf(n)

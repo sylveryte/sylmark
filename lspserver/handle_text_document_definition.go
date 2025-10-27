@@ -59,7 +59,7 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 					return nil, nil
 				}
 				rng := lsp.Range{}
-				uri, subTarget, found := data.GetUrlAndSubTarget(string(uri))
+				uri, subTarget, found := h.Store.Config.GetMdRealUrlAndSubTarget(string(uri))
 				if data.IsMdFile(string(uri)) {
 					if found {
 						id := h.Store.GetIdFromURI(uri)

@@ -2,6 +2,8 @@ codeberg.org/sylveryte/tree-sitter-sylmark v0.1.42 h1:ICRRFY/mjuIQvseU2Hu7D79tOJ
 codeberg.org/sylveryte/tree-sitter-sylmark v0.1.42/go.mod h1:zwqAToiij7GLfmAw+8VWUsT/yacHMExffnZWgykRjrA=
 codeberg.org/sylveryte/tree-sitter-sylmark v0.1.43 h1:9SkcvcJmylsM/2peee3woUnboBDb3HAd0OajxhTQZLM=
 codeberg.org/sylveryte/tree-sitter-sylmark v0.1.43/go.mod h1:zwqAToiij7GLfmAw+8VWUsT/yacHMExffnZWgykRjrA=
+github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
+github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
