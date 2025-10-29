@@ -21,7 +21,7 @@ type Config struct {
 }
 
 func NewConfig() Config {
-	rmakers := []string{"sylroot.toml"}
+	rmakers := []string{".sylroot.toml"}
 	return Config{
 		RootMarkers:              rmakers,
 		IncludeMdExtensionMdLink: true,
@@ -31,7 +31,7 @@ func NewConfig() Config {
 }
 
 func (c *Config) LoadConfig() {
-	filePath := filepath.Join(c.RootPath, "sylroot.toml")
+	filePath := filepath.Join(c.RootPath, ".sylroot.toml")
 	toml.DecodeFile(filePath, c)
 }
 

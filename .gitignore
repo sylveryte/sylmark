@@ -1,3 +1,5 @@
 ./sylmark
 tmp/
 sylmark
+# Added by goreleaser init:
+dist/

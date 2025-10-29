@@ -1,7 +1,3 @@
-codeberg.org/sylveryte/tree-sitter-sylmark v0.1.42 h1:ICRRFY/mjuIQvseU2Hu7D79tOJ6CnESItAA32eqSjjE=
-codeberg.org/sylveryte/tree-sitter-sylmark v0.1.42/go.mod h1:zwqAToiij7GLfmAw+8VWUsT/yacHMExffnZWgykRjrA=
-codeberg.org/sylveryte/tree-sitter-sylmark v0.1.43 h1:9SkcvcJmylsM/2peee3woUnboBDb3HAd0OajxhTQZLM=
-codeberg.org/sylveryte/tree-sitter-sylmark v0.1.43/go.mod h1:zwqAToiij7GLfmAw+8VWUsT/yacHMExffnZWgykRjrA=
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -28,12 +24,12 @@ github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOf
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/sylveryte/tree-sitter-markdown v0.0.0-20250924034049-063184969c08 h1:huroNZFB//G/335bAI38xwzHFYMeE2UpWA/2JosWVck=
 github.com/sylveryte/tree-sitter-markdown v0.0.0-20250924034049-063184969c08/go.mod h1:Cg7UAdZ+w9gOKldk7/2cEQQF9X50dXGDAcfZ/bUdYIU=
-github.com/sylveryte/tree-sitter-sylmark v0.1.3 h1:0D3rC/UzlB5plWQwsQachO46sLc/yFCH6gdZBC9r/8A=
-github.com/sylveryte/tree-sitter-sylmark v0.1.3/go.mod h1:lquzxvPsRsK923Rg7iirCtzP/JAKWuOTA1UuV1VKPgE=
 github.com/tj/assert v0.0.0-20190920132354-ee03d75cd160 h1:NSWpaDaurcAJY7PkL8Xt0PhZE7qpvbZl5ljd8r6U0bI=
 github.com/tj/assert v0.0.0-20190920132354-ee03d75cd160/go.mod h1:mZ9/Rh9oLWpLLDRpvE+3b7gP/C2YyLFYxNmcLnPTMe0=
 github.com/tj/go-naturaldate v1.3.0 h1:OgJIPkR/Jk4bFMBLbxZ8w+QUxwjqSvzd9x+yXocY4RI=
 github.com/tj/go-naturaldate v1.3.0/go.mod h1:rpUbjivDKiS1BlfMGc2qUKNZ/yxgthOfmytQs8d8hKk=
+github.com/tree-sitter-grammars/tree-sitter-markdown v0.5.1 h1:fkKbMnLZAwYGyeS/6/vWsgX5sSVSNaupryoKCHhw8ag=
+github.com/tree-sitter-grammars/tree-sitter-markdown v0.5.1/go.mod h1:Cw6XOdJRZZt7RKnDszrMJwsfTL+2mQRiz+nlE694HNY=
 github.com/tree-sitter/go-tree-sitter v0.25.0 h1:sx6kcg8raRFCvc9BnXglke6axya12krCJF5xJ2sftRU=
 github.com/tree-sitter/go-tree-sitter v0.25.0/go.mod h1:r77ig7BikoZhHrrsjAnv8RqGti5rtSyvDHPzgTPsUuU=
 github.com/tree-sitter/tree-sitter-c v0.23.4 h1:nBPH3FV07DzAD7p0GfNvXM+Y7pNIoPenQWBpvM++t4c=
@@ -61,8 +57,6 @@ github.com/tree-sitter/tree-sitter-ruby v0.23.1/go.mod h1:kUS4kCCQloFcdX6sdpr8p6
 github.com/tree-sitter/tree-sitter-rust v0.23.2 h1:6AtoooCW5GqNrRpfnvl0iUhxTAZEovEmLKDbyHlfw90=
 github.com/tree-sitter/tree-sitter-rust v0.23.2/go.mod h1:hfeGWic9BAfgTrc7Xf6FaOAguCFJRo3RBbs7QJ6D7MI=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-github.com/yuin/goldmark v1.7.13 h1:GPddIs617DnBLFFVJFgpo1aBfe/4xcvMc3SB5t/D0pA=
-github.com/yuin/goldmark v1.7.13/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
 golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4/go.mod h1:jJ57K6gSWd91VN4djpZkiMVwK6gcyfeH4XE8wZrZaV4=
