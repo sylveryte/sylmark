@@ -7,57 +7,6 @@ import (
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-// func getLinkUrl(node *tree_sitter.Node, content string) (url string, ok bool) {
-//
-// 	url, ok = lsp.FieldText(node, "url", content)
-//
-// 	if !ok {
-// 		return url, ok
-// 	}
-//
-// 	url = strings.TrimSpace(url)
-//
-// 	return url, ok
-// }
-
-// this is to overcome parser issue of recognising `conten # not heading` as heading
-// func isValidHeading(node *tree_sitter.Node, content string) bool {
-// 	// check if starting from 0
-// 	startPoint := node.StartPosition()
-// 	if startPoint.Column == 0 {
-// 		return true
-// 	}
-//
-// 	// since # should start within first 4 columns
-// 	if startPoint.Column > 3 {
-// 		return false
-// 	}
-// 	// check if from 0 to node start column is blank string
-// 	line, ok := GetLineFromContent(content, int(startPoint.Row))
-// 	if !ok {
-// 	}
-//
-// 	trimmed := strings.TrimSpace(line[0:startPoint.Column])
-// 	return len(trimmed) == 0
-// }
-
-// func getHeadingTitle(node *tree_sitter.Node, content string) (link string, ok bool) {
-// 	ok = isValidHeading(node, content)
-// 	if !ok {
-// 		return
-// 	}
-//
-// 	link, ok = lsp.FieldText(node, "heading_content", content)
-//
-// 	if !ok {
-// 		return
-// 	}
-//
-// 	link = strings.TrimSpace(link)
-//
-// 	return
-// }
-
 // any atx heading node, # included in SubTarget
 func GetSubTarget(node *tree_sitter.Node, content string) (subTarget SubTarget, ok bool) {
 	if node.Kind() != "atx_heading" {
@@ -158,6 +107,28 @@ func (s *Store) LocationFromIdLocation(loc IdLocation) (*lsp.Location, bool) {
 		}, true
 	}
 	return nil, false
+}
+
+// matches Id case insensitve and returns id
+func (s *Store) findIdFromURIFold(uri lsp.DocumentURI) (id Id, found bool) {
+	id, found = s.findIdFromURI(uri)
+	if found {
+		return
+	}
+	for u, fid := range s.IdStore.uri {
+		m := strings.EqualFold(string(uri), string(u))
+		if m {
+			id = fid
+			break
+		}
+	}
+
+	return id, id != 0
+}
+
+func (s *Store) findIdFromURI(uri lsp.DocumentURI) (id Id, found bool) {
+	id, found = s.IdStore.uri[uri]
+	return
 }
 
 /// Store and link add business

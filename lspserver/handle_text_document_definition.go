@@ -53,18 +53,11 @@ func (h *LangHandler) handleTextDocumentDefinition(_ context.Context, _ *jsonrpc
 					}
 				}
 			case "inline_link":
-				uri, ok := h.Store.Config.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
-				if !ok {
-					slog.Error("Failed to make uri ")
-					return nil, nil
-				}
+				uri, targetId, subTarget, found := h.Store.GetInlineFullTargetAndSubTarget(parentedNode, string(doc.Content), id)
+
 				rng := lsp.Range{}
-				uri, subTarget, found := h.Store.Config.GetMdRealUrlAndSubTarget(string(uri))
-				if data.IsMdFile(string(uri)) {
-					if found {
-						id := h.Store.GetIdFromURI(uri)
-						rng, _ = h.Store.LinkStore.GetDef(id, subTarget)
-					}
+				if found {
+					rng, _ = h.Store.LinkStore.GetDef(targetId, subTarget)
 					return lsp.Location{
 						URI:   uri,
 						Range: rng,

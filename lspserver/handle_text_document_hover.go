@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"sylmark/data"
 	"sylmark/lsp"
 
@@ -64,18 +63,12 @@ func (h *LangHandler) handleHover(_ context.Context, _ *jsonrpc2.Conn, req *json
 					content = refsText + content
 				}
 			case "inline_link":
-				uri, ok := h.Store.Config.GetUriFromInlineNode(parentedNode, string(doc.Content), params.TextDocument.URI)
-				if !ok {
-					slog.Error("Failed to make uri ")
-					return nil, nil
-				}
 				rng := lsp.Range{}
-				uri, subTarget, _ := h.Store.Config.GetMdRealUrlAndSubTarget(string(uri))
-				if data.IsMdFile(string(uri)) {
-					id = h.Store.GetIdFromURI(uri)
-					rng, _ = h.Store.LinkStore.GetDef(id, subTarget)
-					content += h.Store.LinkStore.GetSubTargetHover(id, subTarget) + "\n---"
-					content += h.Store.GetExcerpt(id, rng)
+				_, targetId, subTarget, found := h.Store.GetInlineFullTargetAndSubTarget(parentedNode, string(doc.Content), id)
+				if found {
+					rng, _ = h.Store.LinkStore.GetDef(targetId, subTarget)
+					content += h.Store.LinkStore.GetSubTargetHover(targetId, subTarget) + "\n---"
+					content += h.Store.GetExcerpt(targetId, rng)
 				}
 
 			case "atx_heading":

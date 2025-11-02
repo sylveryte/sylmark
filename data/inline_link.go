@@ -18,41 +18,36 @@ func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range,
 	otherFilesOnly := mdFilesOnly && len(arg) > 2 && arg[1] == ' '
 	strppedArg := strings.TrimSpace(arg)
 	isHeadingMode := strings.ContainsRune(arg, '#')
+	fileId := s.GetIdFromURI(*uri)
+	sourcePath, err := DirPathFromURI(*uri)
+	if err != nil {
+		slog.Error("Something went wrong for path relative " + err.Error())
+		return completions
+	}
 
 	if isHeadingMode {
-		fileUri, _, _ := s.Config.GetMdRealUrlAndSubTarget(arg)
-		filePath := string(fileUri)
-		fullFilePath, err := GetFullPathRelatedTo(*uri, filePath)
-		if err != nil {
-			slog.Warn(fmt.Sprintf("Link file issue %s", err.Error()))
-		}
-		targetUri, err := UriFromPath(fullFilePath)
-		if err != nil {
-			slog.Warn(fmt.Sprintf("URI failed file issue %s", err.Error()))
-		}
-		targetId := s.GetIdFromURI(targetUri)
-		subTargets := s.LinkStore.GetSubTargetsAndRanges(targetId)
+		arg = s.Config.ProcessInlineTargetPath(arg)
+		filePathUri, targetId, _, _ := s.GetInlineTargetAndSubTarget(arg, fileId)
+		filePath, _ := PathFromURI(filePathUri)
+		subTargets := s.LinkStore.getSubTargetsAndRanges(targetId)
 		for _, subTargetNRange := range subTargets {
 			if len(subTargetNRange.subTarget) == 0 {
 				continue
 			}
-			mdTarget := s.Config.GetMdFormattedTargetUrl(filePath)
-			fullLink := FullTarget(string(mdTarget) + string(subTargetNRange.subTarget))
-			match := fuzzy.MatchFold(arg, string(fullLink))
+			encodedRelPath, _ := s.getInlineRelFormattedTarget(sourcePath, string(filePath))
+			fullLink := FullTarget(string(encodedRelPath) + s.encodeForInlineLinkdownLinkPath(string(subTargetNRange.subTarget)))
 			var link string
-			if match {
-				link = fmt.Sprintf("[%s](%s)", text, fullLink)
-				completions = append(completions, lsp.CompletionItem{
-					Label:    link,
-					Kind:     lsp.ReferenceCompletion,
-					SortText: "b",
-					TextEdit: &lsp.TextEdit{
-						Range:   rng,
-						NewText: link,
-					},
-					Detail: "",
-				})
-			}
+			link = fmt.Sprintf("[%s](%s)", text, fullLink)
+			completions = append(completions, lsp.CompletionItem{
+				Label:    link,
+				Kind:     lsp.ReferenceCompletion,
+				SortText: "b",
+				TextEdit: &lsp.TextEdit{
+					Range:   rng,
+					NewText: link,
+				},
+				Detail: "",
+			})
 		}
 	} else {
 
@@ -77,16 +72,7 @@ func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range,
 			if match := fuzzy.MatchFold(strppedArg, path); match == false {
 				continue
 			}
-			sourcePath, err := DirPathFromURI(*uri)
-			if err != nil {
-				slog.Error("Something went wrong for path relative " + err.Error())
-				continue
-			}
-			relPath, err := filepath.Rel(sourcePath, path)
-			if s.Config.HugoMdLink && !strings.HasPrefix(relPath, "file://") {
-				relPath = filepath.Join("..", relPath)
-			}
-			encodedRelPath := encodeForInlineLinkdownLinkPath(relPath)
+			encodedRelPath, err := s.getInlineRelFormattedTarget(sourcePath, path)
 			if err != nil {
 				slog.Error("Something went wrong for path relative " + err.Error())
 				continue
@@ -96,11 +82,10 @@ func (s *Store) GetInlineLinkCompletions(arg string, text string, rng lsp.Range,
 				text = fn
 			}
 			var link string
-			formattedEncodedRelPath := s.Config.GetMdFormattedTargetUrl(encodedRelPath)
-			if s.isImage(relPath) {
-				link = fmt.Sprintf("![%s](%s)", text, formattedEncodedRelPath)
+			if s.isImage(encodedRelPath) {
+				link = fmt.Sprintf("![%s](%s)", text, encodedRelPath)
 			} else {
-				link = fmt.Sprintf("[%s](%s)", text, formattedEncodedRelPath)
+				link = fmt.Sprintf("[%s](%s)", text, encodedRelPath)
 			}
 			completions = append(completions, lsp.CompletionItem{
 				Label:    link,
@@ -122,13 +107,19 @@ func GetFileName(path string) string {
 	return RemoveMdExtOnly(filepath.Base(path))
 }
 
-// replaces " " with "%20"
-func encodeForInlineLinkdownLinkPath(path string) string {
+// replaces " " with "%20" and ToLower for MdLinkWebMode
+func (s *Store) encodeForInlineLinkdownLinkPath(path string) string {
+	if s.Config.MdLinkWebMode {
+		return strings.ToLower(strings.ReplaceAll(path, " ", "-"))
+	}
 	return strings.ReplaceAll(path, " ", "%20")
 }
 
 // replaces "%20" with " "
-func DecodeForInlineLinkdownLinkPath(path string) string {
+func (s *Store) DecodeForInlineLinkdownLinkPath(path string) string {
+	if s.Config.MdLinkWebMode {
+		return strings.ReplaceAll(path, "-", " ")
+	}
 	return strings.ReplaceAll(path, "%20", " ")
 }
 func RemoveMdExtOnly(fileName string) string {
@@ -145,7 +136,7 @@ func (s *Store) isImage(filePath string) bool {
 	return false
 }
 
-func GetInlineLinkTarget(node *tree_sitter.Node, content string, uri lsp.DocumentURI) (path string, err error) {
+func (c *Config) GetInlineLinkTarget(node *tree_sitter.Node, content string) (path string, err error) {
 	if node.Kind() != "inline_link" {
 		return "", fmt.Errorf("Not inline_link")
 	}
@@ -154,8 +145,19 @@ func GetInlineLinkTarget(node *tree_sitter.Node, content string, uri lsp.Documen
 		return "", fmt.Errorf("No link")
 	}
 	path = lsp.GetNodeContent(*n, content)
+	path = c.ProcessInlineTargetPath(path)
 	return path, nil
 
+}
+
+func (c *Config) ProcessInlineTargetPath(path string) string {
+	if c.MdLinkWebMode && strings.HasPrefix(path, "..") {
+		cleanFilePath, found := strings.CutPrefix(path, "..")
+		if found {
+			path = cleanFilePath
+		}
+	}
+	return path
 }
 
 func GetFullPathRelatedTo(fullURI lsp.DocumentURI, filePath string) (string, error) {
@@ -167,41 +169,92 @@ func GetFullPathRelatedTo(fullURI lsp.DocumentURI, filePath string) (string, err
 
 }
 
-func (c *Config) GetUriFromInlineNode(inlineNode *tree_sitter.Node, content string, relUri lsp.DocumentURI) (lsp.DocumentURI, bool) {
-
-	filePath, err := GetInlineLinkTarget(inlineNode, content, relUri)
-	if err != nil {
-		slog.Error("File doesnt exist")
-		return "", false
-	}
-	if c.HugoMdLink && strings.HasPrefix(filePath, "..") {
-		cleanFilePath, found := strings.CutPrefix(filePath, "..")
-		if found {
-			filePath = cleanFilePath
-		}
-	}
-	fullFilePath, err := GetFullPathRelatedTo(relUri, filePath)
-	if err != nil {
-		slog.Error("Fialed to get full path" + err.Error())
-		return "", false
-	}
-	uri, err := UriFromPath(fullFilePath)
-	if err != nil {
-		slog.Error("Failed to make uri " + err.Error())
-		return "", false
-	}
-	return uri, true
-}
-
 // checks if ends with .md
 func IsMdFile(path string) bool {
 	return strings.HasSuffix(path, ".md")
 }
 
 // adds .md at suffix if needed
-func GetMdRealTargetUrl(path string) string {
+func GetInlineTargetUrl(path string) string {
 	if strings.HasSuffix(path, ".md") {
 		return path
 	}
 	return path + ".md"
+}
+
+// removes .md file if config demands
+func (s *Store) GetMdFormattedTargetUrl(path string) string {
+	if s.Config.IncludeMdExtensionMdLink && !s.Config.MdLinkWebMode {
+		return path
+	}
+	return RemoveMdExtOnly(path)
+}
+
+func (s *Store) getInlineRelFormattedTarget(sourcePath string, path string) (relPath string, err error) {
+	relPath, err = filepath.Rel(sourcePath, path)
+	if err != nil {
+		return
+	}
+	if s.Config.MdLinkWebMode && !strings.HasPrefix(relPath, "file://") {
+		relPath = s.encodeForInlineLinkdownLinkPath(relPath)
+		relPath = strings.ToLower(relPath)
+		relPath = filepath.Join("..", relPath)
+	}
+	relPath = s.encodeForInlineLinkdownLinkPath(relPath)
+	relPath = s.GetMdFormattedTargetUrl(relPath)
+
+	return relPath, nil
+}
+
+// unformats it gets real link adds .md where needed
+func (s *Store) GetInlineFullTargetAndSubTarget(n *tree_sitter.Node, content string, fileId Id) (url lsp.DocumentURI, targetId Id, subTarget SubTarget, found bool) {
+	fullUrl, err := s.Config.GetInlineLinkTarget(n, content)
+	if err != nil {
+		return
+	}
+
+	return s.GetInlineTargetAndSubTarget(fullUrl, fileId)
+}
+
+func (s *Store) GetInlineTargetAndSubTarget(fullUrl string, fileId Id) (url lsp.DocumentURI, targetId Id, subTarget SubTarget, found bool) {
+
+	found = strings.ContainsRune(fullUrl, '#')
+	var target string
+	var relTarget string
+
+	if found {
+		splits := strings.SplitN(fullUrl, "#", 2)
+		target = splits[0]
+		subTarget = SubTarget("#" + splits[1])
+	} else {
+		target = fullUrl
+	}
+	target = GetInlineTargetUrl(target)
+	target = s.DecodeForInlineLinkdownLinkPath(target)
+
+	if !strings.HasPrefix(target, "file://") {
+		fileUri, _ := s.GetUri(fileId)
+
+		if s.Config.MdLinkWebMode {
+			relTarget = target
+			target, _ = GetFullPathRelatedTo(fileUri, relTarget)
+
+			targetUri, _ := UriFromPath(target)
+			id, found := s.findIdFromURIFold(targetUri)
+
+			targetId = id
+			url, found = s.GetUri(id)
+
+			return url, targetId, subTarget, found
+		}
+
+		target, _ = GetFullPathRelatedTo(fileUri, target)
+	}
+
+	url, _ = UriFromPath(target)
+	if IsMdFile(target) {
+		found = true
+		targetId = s.GetIdFromURI(url)
+	}
+	return url, targetId, subTarget, found
 }

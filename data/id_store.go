@@ -15,6 +15,9 @@ type IdStore struct {
 	Id            map[Id]lsp.DocumentURI
 	uri           map[lsp.DocumentURI]Id
 	ShadowTargets map[Id][]Target
+
+	// hugoLinks string=hugoLink Id=fileLinkWhereLinkIs Id=targetLink
+	hugoLinks map[string]map[Id]Id
 }
 
 func NewIdStore() IdStore {
@@ -24,6 +27,8 @@ func NewIdStore() IdStore {
 		ShadowTargets: map[Id][]Target{},
 	}
 }
+
+
 func (s *IdStore) Print() {
 	slog.Info("IdStore===============>>>>>>>>>>")
 	slog.Info("IdStore====id")
@@ -35,6 +40,10 @@ func (s *IdStore) Print() {
 		slog.Info(fmt.Sprintf("[%s]=[%d]", k, v))
 	}
 	slog.Info("IdStore====shadowTargets")
+	for k, v := range s.ShadowTargets {
+		slog.Info(fmt.Sprintf("[%d]=[%s]", k, v))
+	}
+	slog.Info("IdStore====hugoLinks")
 	for k, v := range s.ShadowTargets {
 		slog.Info(fmt.Sprintf("[%d]=[%s]", k, v))
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sylmark/lsp"
 	"time"
 
@@ -15,7 +14,7 @@ import (
 type Config struct {
 	RootMarkers              []string
 	IncludeMdExtensionMdLink bool `toml:"include_md_extension_md_link"`
-	HugoMdLink               bool `toml:"hugo_md_link"`
+	MdLinkWebMode            bool `toml:"md_link_web_mode"`
 	RootPath                 string
 	DateLayout               string
 }
@@ -26,38 +25,13 @@ func NewConfig() Config {
 		RootMarkers:              rmakers,
 		IncludeMdExtensionMdLink: true,
 		DateLayout:               time.DateOnly,
-		HugoMdLink:               false,
+		MdLinkWebMode:            false,
 	}
 }
 
 func (c *Config) LoadConfig() {
 	filePath := filepath.Join(c.RootPath, ".sylroot.toml")
 	toml.DecodeFile(filePath, c)
-}
-
-// removes .md file if config demands
-func (c *Config) GetMdFormattedTargetUrl(path string) string {
-	if c.IncludeMdExtensionMdLink {
-		return path
-	}
-	return RemoveMdExtOnly(path)
-}
-
-// adds .md where needed
-func (c *Config) GetMdRealUrlAndSubTarget(fullUrl string) (url lsp.DocumentURI, subTarget SubTarget, found bool) {
-	found = strings.ContainsRune(fullUrl, '#')
-	if c.HugoMdLink && !strings.HasPrefix(fullUrl, "file://") {
-		fullUrl = filepath.Join("..", fullUrl)
-	}
-	if found {
-		splits := strings.SplitN(fullUrl, "#", 2)
-		url = lsp.DocumentURI(splits[0])
-		subTarget = SubTarget("#" + splits[1])
-	} else {
-		url = lsp.DocumentURI(fullUrl)
-	}
-	url = lsp.DocumentURI(GetMdRealTargetUrl(string(url)))
-	return url, subTarget, found
 }
 
 func (c *Config) GetDateString(date time.Time) string {

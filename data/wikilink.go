@@ -124,7 +124,7 @@ func (s *Store) GetWikiCompletions(arg string, needEnd bool, onlyFiles bool, rng
 			}
 			// add FullTarget
 			for _, id := range ids {
-				subTargets := s.LinkStore.GetSubTargetsAndRanges(id)
+				subTargets := s.LinkStore.getSubTargetsAndRanges(id)
 				for _, subTargetNRange := range subTargets {
 					fullTarget := FullTarget(string(target) + string(subTargetNRange.subTarget))
 					match = fuzzy.MatchFold(arg, string(fullTarget))

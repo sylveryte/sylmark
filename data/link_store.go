@@ -200,7 +200,7 @@ func (linkStore *LinkStore) GetSubTargets(id Id) (subTargets []SubTarget) {
 	}
 	return subTargets
 }
-func (linkStore *LinkStore) GetSubTargetsAndRanges(id Id) (subTargets []SubTargetAndRanges) {
+func (linkStore *LinkStore) getSubTargetsAndRanges(id Id) (subTargets []SubTargetAndRanges) {
 	if linkStore == nil {
 		return
 	}

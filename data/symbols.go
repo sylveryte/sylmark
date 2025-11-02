@@ -40,7 +40,7 @@ func (s *Store) GetAllSymbols(query string) (symbols []lsp.WorkspaceSymbol) {
 		}
 		if !isFileOnly {
 			// add subtargets as well
-			for _, st := range s.LinkStore.GetSubTargetsAndRanges(id) {
+			for _, st := range s.LinkStore.getSubTargetsAndRanges(id) {
 				nr := rootPath + "#" + string(st.subTarget)
 				match := fuzzy.MatchFold(query, nr)
 				if match {
