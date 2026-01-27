@@ -17,6 +17,8 @@ type Config struct {
 	MdLinkWebMode            bool `toml:"md_link_web_mode"`
 	RootPath                 string
 	DateLayout               string
+	MonthDateLayout          string
+	MonthDateSubtargetLayout string
 }
 
 func NewConfig() Config {
@@ -25,6 +27,8 @@ func NewConfig() Config {
 		RootMarkers:              rmakers,
 		IncludeMdExtensionMdLink: true,
 		DateLayout:               time.DateOnly,
+		MonthDateLayout:          "2006-01-January",
+		MonthDateSubtargetLayout: "02 Monday",
 		MdLinkWebMode:            false,
 	}
 }
@@ -34,6 +38,12 @@ func (c *Config) LoadConfig() {
 	toml.DecodeFile(filePath, c)
 }
 
+func (c *Config) GetMonthDateSubtargetString(date time.Time) string {
+	return date.Format(c.MonthDateSubtargetLayout)
+}
+func (c *Config) GetMonthDateString(date time.Time) string {
+	return date.Format(c.MonthDateLayout)
+}
 func (c *Config) GetDateString(date time.Time) string {
 	return date.Format(c.DateLayout)
 }

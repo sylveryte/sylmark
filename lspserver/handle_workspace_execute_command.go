@@ -36,14 +36,31 @@ func (h *LangHandler) handleWorkspaceExecuteCommand(_ context.Context, _ *jsonrp
 			}
 			// slog.Info("Arg is " + arg)
 
-			date, err := naturaldate.Parse(arg, time.Now())
-			if err != nil {
-				slog.Error("Date is wrong")
-				return nil, nil
+			if arg == "month" {
+				date := time.Now()
+				datestring := h.Store.Config.GetMonthDateString(date)
+				fileName := datestring + ".md"
+				subtarget := h.Store.Config.GetMonthDateSubtargetString(date)
+				defs, found := h.Store.GetDefsFromTarget(data.Target(datestring), data.SubTarget("#"+subtarget))
+				if found {
+					def := defs[0]
+					uri, _ := h.Store.GetUri(def.Id)
+					h.ShowDocument(uri, false, def.Range)
+				} else {
+					uri, _ := h.Store.Config.GetFileURI(fileName, "journal/")
+					rng := lsp.Range{}
+					h.ShowDocument(uri, false, rng)
+				}
+			} else {
+				date, err := naturaldate.Parse(arg, time.Now())
+				if err != nil {
+					slog.Error("Date is wrong")
+					return nil, nil
+				}
+				fileName := h.Store.Config.GetDateString(date) + ".md"
+				uri, err := h.Store.Config.GetFileURI(fileName, "journal/")
+				h.ShowDocument(uri, false, lsp.Range{})
 			}
-			fileName := h.Store.Config.GetDateString(date) + ".md"
-			uri, err := h.Store.Config.GetFileURI(fileName, "journal/")
-			h.ShowDocument(uri, false, lsp.Range{})
 		}
 	case "create":
 		{
