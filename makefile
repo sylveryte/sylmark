@@ -12,7 +12,7 @@ all: frontend backend
 
 # Build frontend
 frontend:
-	cd $(FRONTEND_DIR) && pnpm install --frozen-lockfile && pnpm run build
+	cd $(FRONTEND_DIR) && npm install && npm run build
 
 # Build Go backend
 backend:
